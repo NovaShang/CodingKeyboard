@@ -29,7 +29,6 @@ struct CodingKeyboardView: View {
             .padding(.top, 8)
         }
         .frame(height: keyHeight * 5 + rowSpacing * 4 + 8)
-        .background(Color(UIColor.systemGray5))
     }
 
     private func handle(_ action: KeyAction) {
@@ -40,4 +39,12 @@ struct CodingKeyboardView: View {
         }
         onAction(action)
     }
+}
+
+#Preview {
+    CodingKeyboardView(onAction: { _ in })
+        .background(alignment: .bottom) {
+            Color(UIColor.systemGray6).ignoresSafeArea(edges: .bottom)
+        }
+        .safeAreaPadding(.bottom, 34)
 }

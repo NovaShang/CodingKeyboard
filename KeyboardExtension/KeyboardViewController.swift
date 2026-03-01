@@ -8,6 +8,8 @@ class KeyboardViewController: UIInputViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
+        view.backgroundColor = .clear
+
         let keyboardView = CodingKeyboardView(onAction: { [weak self] action in
             self?.handle(action)
         })

@@ -22,14 +22,13 @@ struct KeyCap: View {
     var body: some View {
         Button(action: action) {
             Text(label)
-                .font(.system(size: 15, weight: .regular, design: .monospaced))
+                .font(.system(size: 15, weight: .medium, design: .monospaced))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(
-                    RoundedRectangle(cornerRadius: 5)
+                    RoundedRectangle(cornerRadius: 8)
                         .fill(backgroundColor)
-                        .shadow(color: .black.opacity(0.35), radius: 0, x: 0, y: 1)
                 )
-                .foregroundColor(.primary)
+                .foregroundStyle(.primary)
         }
         .buttonStyle(.plain)
         .frame(width: width, height: height)
@@ -38,9 +37,40 @@ struct KeyCap: View {
     private var backgroundColor: Color {
         switch style {
         case .normal, .space:
-            return Color(UIColor.systemBackground)
+            // Light: near-white; Dark: mid-gray — matches system keyboard normal key
+            return Color(UIColor(dynamicProvider: { t in
+                t.userInterfaceStyle == .dark
+                    ? UIColor(white: 0.32, alpha: 1)
+                    : UIColor(white: 1.0, alpha: 1)
+            }))
         case .modifier:
-            return Color(UIColor.systemGray3)
+            // Light: light gray; Dark: slightly darker than normal — matches system modifier key
+            return Color(UIColor(dynamicProvider: { t in
+                t.userInterfaceStyle == .dark
+                    ? UIColor(white: 0.25, alpha: 1)
+                    : UIColor(white: 0.82, alpha: 1)
+            }))
         }
     }
 }
+#Preview("Light") {
+    HStack(spacing: 6) {
+        KeyCap(label: "a",     style: .normal,   width: 44, height: 44, action: {})
+        KeyCap(label: "⇧",    style: .modifier, width: 66, height: 44, action: {})
+        KeyCap(label: "space", style: .space,    width: 88, height: 44, action: {})
+    }
+    .padding()
+    .background(Color(UIColor.systemGray6))
+}
+
+#Preview("Dark") {
+    HStack(spacing: 6) {
+        KeyCap(label: "a",     style: .normal,   width: 44, height: 44, action: {})
+        KeyCap(label: "⇧",    style: .modifier, width: 66, height: 44, action: {})
+        KeyCap(label: "space", style: .space,    width: 88, height: 44, action: {})
+    }
+    .padding()
+    .background(Color(UIColor.systemGray6))
+    .preferredColorScheme(.dark)
+}
+

@@ -15,7 +15,7 @@ struct ContentView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             CodingKeyboardView(onAction: handleAction)
                 .background(alignment: .bottom) {
-                    Color(UIColor.systemGray5)
+                    Color(UIColor.systemGray6)
                         .ignoresSafeArea(edges: .bottom)
                 }
         }
