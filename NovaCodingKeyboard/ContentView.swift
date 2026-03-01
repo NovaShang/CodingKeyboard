@@ -13,12 +13,21 @@ struct ContentView: View {
         }
         .background(Color(UIColor.secondarySystemBackground))
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            CodingKeyboardView(text: $typedText)
+            CodingKeyboardView(onAction: handleAction)
                 .background(alignment: .bottom) {
-                    // Extends the keyboard background colour into the home indicator area
                     Color(UIColor.systemGray5)
                         .ignoresSafeArea(edges: .bottom)
                 }
+        }
+    }
+
+    private func handleAction(_ action: KeyAction) {
+        switch action {
+        case .character(let c): typedText.append(c)
+        case .backspace:        if !typedText.isEmpty { typedText.removeLast() }
+        case .enter:            typedText.append("\n")
+        case .space:            typedText.append(" ")
+        case .shift:            break
         }
     }
 }

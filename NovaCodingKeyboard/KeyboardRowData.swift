@@ -1,8 +1,6 @@
 import Foundation
 
 // MARK: - Row Data
-// Each function returns a row of KeyDef values.
-// Functions are internal (not private) so CodingKeyboardView can call them.
 
 func buildRow1() -> [KeyDef] {
     var r = [KeyDef]()

@@ -1,12 +1,13 @@
 import SwiftUI
 
 struct CodingKeyboardView: View {
-    @Binding var text: String
+    /// Called whenever a key is tapped. The caller decides what to do with the action.
+    let onAction: @MainActor (KeyAction) -> Void
+
     @State private var isShifted = false
 
     private let keyHeight: CGFloat = 44
     private let gap: CGFloat = 6
-    /// Number of standard key columns the keyboard is laid out on
     private let totalCols: CGFloat = 11
     private let rowSpacing: CGFloat = 8
 
@@ -31,24 +32,12 @@ struct CodingKeyboardView: View {
         .background(Color(UIColor.systemGray5))
     }
 
-    func handle(_ action: KeyAction) {
-        switch action {
-        case .character(let c):
-            text.append(c)
-            if isShifted { isShifted = false }
-        case .backspace:
-            if !text.isEmpty { text.removeLast() }
-        case .enter:
-            text.append("\n")
-        case .space:
-            text.append(" ")
-        case .shift:
+    private func handle(_ action: KeyAction) {
+        if case .shift = action {
             isShifted.toggle()
+        } else {
+            if isShifted { isShifted = false }
         }
+        onAction(action)
     }
-}
-
-#Preview {
-    CodingKeyboardView(text: .constant(""))
-        .safeAreaPadding(.bottom, 34)
 }
