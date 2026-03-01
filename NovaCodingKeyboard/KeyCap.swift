@@ -44,3 +44,13 @@ struct KeyCap: View {
         }
     }
 }
+#Preview("All styles") {
+    HStack(spacing: 6) {
+        KeyCap(label: "a",     style: .normal,   width: 44, height: 44, action: {})
+        KeyCap(label: "⇧",    style: .modifier, width: 66, height: 44, action: {})
+        KeyCap(label: "space", style: .space,    width: 88, height: 44, action: {})
+    }
+    .padding()
+    .background(Color(UIColor.systemGray5))
+}
+

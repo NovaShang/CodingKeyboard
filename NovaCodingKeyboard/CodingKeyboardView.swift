@@ -47,3 +47,8 @@ struct CodingKeyboardView: View {
         }
     }
 }
+
+#Preview {
+    CodingKeyboardView(text: .constant(""))
+        .safeAreaPadding(.bottom, 34)
+}
