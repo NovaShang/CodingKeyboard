@@ -9,6 +9,7 @@ enum KeyAction {
     case shift
     case enter
     case space
+    case dismiss
 }
 
 // MARK: - KeyDef

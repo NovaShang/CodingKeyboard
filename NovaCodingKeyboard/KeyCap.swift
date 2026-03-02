@@ -73,7 +73,7 @@ struct KeyCap: View {
         } else {
             // Single-label layout for letters, modifiers, space etc.
             Text(label)
-                .font(.system(size: 17,
+                .font(.system(size: style == .modifier ? 30 : 19,
                               weight: style == .modifier ? .regular : .bold,
                               design: .monospaced))
                 .foregroundStyle(Color.primary)

@@ -44,6 +44,8 @@ class KeyboardViewController: UIInputViewController {
             proxy.insertText(" ")
         case .shift:
             break  // shift state is managed inside CodingKeyboardView
+        case .dismiss:
+            dismissKeyboard()
         }
     }
 

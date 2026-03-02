@@ -28,6 +28,7 @@ struct ContentView: View {
         case .enter:            typedText.append("\n")
         case .space:            typedText.append(" ")
         case .shift:            break
+        case .dismiss:          break  // no-op in app preview
         }
     }
 }
