@@ -37,7 +37,10 @@ struct KeyCap: View {
     }
 
     var body: some View {
-        Button(action: action) {
+        Button(action: {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            action()
+        }) {
             ZStack {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(backgroundColor)
