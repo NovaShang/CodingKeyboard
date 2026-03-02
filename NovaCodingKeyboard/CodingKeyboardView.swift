@@ -1,5 +1,12 @@
 import SwiftUI
 
+private struct KeyboardHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
 struct CodingKeyboardView: View {
     /// Called whenever a key is tapped. The caller decides what to do with the action.
     let onAction: @MainActor (KeyAction) -> Void
@@ -10,6 +17,7 @@ struct CodingKeyboardView: View {
     /// Set to true when a double-tap is detected on press-down, so the following tap-up is ignored.
     @State private var shiftPressWasDoubleTap = false
 
+    // Portrait constants
     private let keyHeight: CGFloat = 44
     private let shortKeyHeight: CGFloat = 34
     private let gap: CGFloat = 6
@@ -17,45 +25,121 @@ struct CodingKeyboardView: View {
     private let rowSpacing: CGFloat = 8
     private let sidePadding: CGFloat = 8
 
+    // Landscape constants
+    private let lKeyHeight: CGFloat = 40
+    private let lGap: CGFloat = 5
+    private let lRowSpacing: CGFloat = 6
+    private let lSidePadding: CGFloat = 6
+
     private var isShifted: Bool { shiftState.isActive }
+
+    /// Portrait total height: 4 full-height rows + 2 short rows + 5 row spacings + top padding
+    private var portraitHeight: CGFloat {
+        keyHeight * 4 + shortKeyHeight * 2 + rowSpacing * 5 + 8
+    }
+
+    /// Landscape total height: 5 rows + 4 row spacings + top padding
+    private var landscapeHeight: CGFloat {
+        lKeyHeight * 5 + lRowSpacing * 4 + 6
+    }
+
+    @State private var currentHeight: CGFloat = 0
 
     var body: some View {
         GeometryReader { geo in
-            let totalWidth = geo.size.width - sidePadding * 2
-            let unitWidth = (totalWidth - (totalCols - 1) * gap) / totalCols
-            let halfUnit = (unitWidth + gap) / 2  // 0.5-unit indent for centering 9-key rows
-            let shiftKeyWidth = unitWidth * 1.5 + gap * 0.5
+            let landscape = geo.size.width > 500
+            let targetHeight = landscape ? landscapeHeight : portraitHeight
 
-            VStack(alignment: .leading, spacing: rowSpacing) {
-                // Row 0: ⇥(2x) [ ] \ ` / ' ↓ — 9 units, right-aligned (1-unit gap on left)
-                KeyboardRow(keys: buildRow0(shifted: isShifted), unitWidth: unitWidth, keyHeight: shortKeyHeight, gap: gap, onTap: handle)
-                // Row 1: numbers (10 keys, full width)
-                KeyboardRow(keys: buildRow1(shifted: isShifted), unitWidth: unitWidth, keyHeight: shortKeyHeight, gap: gap, onTap: handle)
-                // Row 2: QWERTY (10 keys, full width)
-                KeyboardRow(keys: buildRow2(shifted: isShifted), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle)
-                // Row 3: ASDFGHJKL (9 keys, centered with 0.5-unit padding each side)
-                KeyboardRow(keys: buildRow3(shifted: isShifted), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle)
-                    .padding(.horizontal, halfUnit)
-                // Row 4: Shift key rendered separately for custom gesture; rest via KeyboardRow
-                HStack(spacing: gap) {
-                    ShiftKeyCap(
-                        shiftState: shiftState,
-                        width: shiftKeyWidth,
-                        height: keyHeight,
-                        onPressDown: handleShiftPressDown,
-                        onTap: handleShiftTap,
-                        onLongPressBegin: handleShiftLongPressBegin,
-                        onLongPressEnd: handleShiftLongPressEnd
-                    )
-                    KeyboardRow(keys: buildRow4Body(shifted: isShifted), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle)
+            Group {
+                if landscape {
+                    landscapeBody(geo: geo)
+                } else {
+                    portraitBody(geo: geo)
                 }
-                // Row 5: , . - = Space(2x) ; ' / Enter (10 units, full width)
-                KeyboardRow(keys: buildRow5(shifted: isShifted), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle)
             }
-            .padding(.top, 8)
-            .padding(.horizontal, sidePadding)
+            .preference(key: KeyboardHeightKey.self, value: targetHeight)
         }
-        .frame(height: keyHeight * 4 + shortKeyHeight * 2 + rowSpacing * 5 + 8)
+        .frame(height: currentHeight > 0 ? currentHeight : portraitHeight)
+        .onPreferenceChange(KeyboardHeightKey.self) { newHeight in
+            currentHeight = newHeight
+        }
+    }
+
+    // MARK: - Portrait Layout
+
+    @ViewBuilder
+    private func portraitBody(geo: GeometryProxy) -> some View {
+        let totalWidth = geo.size.width - sidePadding * 2
+        let unitWidth = (totalWidth - (totalCols - 1) * gap) / totalCols
+        let halfUnit = (unitWidth + gap) / 2
+        let shiftKeyWidth = unitWidth * 1.5 + gap * 0.5
+
+        VStack(alignment: .leading, spacing: rowSpacing) {
+            KeyboardRow(keys: buildRow0(shifted: isShifted), unitWidth: unitWidth, keyHeight: shortKeyHeight, gap: gap, onTap: handle)
+            KeyboardRow(keys: buildRow1(shifted: isShifted), unitWidth: unitWidth, keyHeight: shortKeyHeight, gap: gap, onTap: handle)
+            KeyboardRow(keys: buildRow2(shifted: isShifted), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle)
+            KeyboardRow(keys: buildRow3(shifted: isShifted), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle)
+                .padding(.horizontal, halfUnit)
+            HStack(spacing: gap) {
+                ShiftKeyCap(
+                    shiftState: shiftState,
+                    width: shiftKeyWidth,
+                    height: keyHeight,
+                    onPressDown: handleShiftPressDown,
+                    onTap: handleShiftTap,
+                    onLongPressBegin: handleShiftLongPressBegin,
+                    onLongPressEnd: handleShiftLongPressEnd
+                )
+                KeyboardRow(keys: buildRow4Body(shifted: isShifted), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle)
+            }
+            KeyboardRow(keys: buildRow5(shifted: isShifted), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle)
+        }
+        .padding(.top, 8)
+        .padding(.horizontal, sidePadding)
+    }
+
+    // MARK: - Landscape Layout (Mac-like, 5 rows)
+
+    @ViewBuilder
+    private func landscapeBody(geo: GeometryProxy) -> some View {
+        let totalWidth = geo.size.width - lSidePadding * 2
+        let unitWidth = (totalWidth - (landscapeTotalCols - 1) * lGap) / landscapeTotalCols
+        let shiftKeyWidth = unitWidth * 2.25 + lGap * 1.25  // 2.25 units
+
+        VStack(alignment: .leading, spacing: lRowSpacing) {
+            // Row 0: ` 1-0 - = ⌫
+            KeyboardRow(keys: buildLandscapeRow0(shifted: isShifted), unitWidth: unitWidth, keyHeight: lKeyHeight, gap: lGap, onTap: handle)
+            // Row 1: ⇥ QWERTYUIOP [ ] backslash
+            KeyboardRow(keys: buildLandscapeRow1(shifted: isShifted), unitWidth: unitWidth, keyHeight: lKeyHeight, gap: lGap, onTap: handle)
+            // Row 2: ☰ ASDFGHJKL ; ' ↵
+            KeyboardRow(keys: buildLandscapeRow2(shifted: isShifted), unitWidth: unitWidth, keyHeight: lKeyHeight, gap: lGap, onTap: handle)
+            // Row 3: ⇧ ZXCVBNM , . / ⇧
+            HStack(spacing: lGap) {
+                ShiftKeyCap(
+                    shiftState: shiftState,
+                    width: shiftKeyWidth,
+                    height: lKeyHeight,
+                    onPressDown: handleShiftPressDown,
+                    onTap: handleShiftTap,
+                    onLongPressBegin: handleShiftLongPressBegin,
+                    onLongPressEnd: handleShiftLongPressEnd
+                )
+                KeyboardRow(keys: buildLandscapeRow3Body(shifted: isShifted), unitWidth: unitWidth, keyHeight: lKeyHeight, gap: lGap, onTap: handle)
+                ShiftKeyCap(
+                    shiftState: shiftState,
+                    width: shiftKeyWidth,
+                    height: lKeyHeight,
+                    onPressDown: handleShiftPressDown,
+                    onTap: handleShiftTap,
+                    onLongPressBegin: handleShiftLongPressBegin,
+                    onLongPressEnd: handleShiftLongPressEnd
+                )
+            }
+            // Row 4: ↓ ␣ ↓
+            KeyboardRow(keys: buildLandscapeRow4(shifted: isShifted), unitWidth: unitWidth, keyHeight: lKeyHeight, gap: lGap, onTap: handle)
+        }
+        .padding(.top, 6)
+        .padding(.horizontal, lSidePadding)
     }
 
     // MARK: - Shift gesture handlers
@@ -130,85 +214,20 @@ struct CodingKeyboardView: View {
 // with a cancellable async Task for the long-press threshold. This avoids the
 // SwiftUI issue where LongPressGesture cancels DragGesture and prevents onEnded.
 
-private struct ShiftKeyCap: View {
-    let shiftState: ShiftState
-    let width: CGFloat
-    let height: CGFloat
-    let onPressDown: @MainActor () -> Void
-    let onTap: @MainActor () -> Void
-    let onLongPressBegin: @MainActor () -> Void
-    let onLongPressEnd: @MainActor () -> Void
 
-    @State private var isPressed = false
-    @State private var longPressTask: Task<Void, Never>? = nil
-    @State private var didLongPress = false
 
-    private let longPressThreshold: TimeInterval = 0.15
-
-    private var label: String {
-        shiftState == .locked ? "⇪" : "⇧"
-    }
-
-    private var backgroundColor: Color {
-        let active = shiftState.isActive
-        return Color(UIColor(dynamicProvider: { t in
-            if t.userInterfaceStyle == .dark {
-                return active ? UIColor(white: 0.55, alpha: 1) : UIColor(white: 0.38, alpha: 1)
-            } else {
-                return active ? UIColor(white: 0.50, alpha: 1) : UIColor(white: 0.72, alpha: 1)
-            }
-        }))
-    }
-
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(backgroundColor)
-            Text(label)
-                .font(.system(size: 24, weight: .regular, design: .default))
-                .minimumScaleFactor(0.5)
-                .lineLimit(1)
-                .foregroundStyle(shiftState.isActive ? Color.white : Color.primary)
-        }
-        .frame(width: width, height: height)
-        .scaleEffect(isPressed ? 0.94 : 1.0)
-        .animation(.easeInOut(duration: 0.08), value: isPressed)
-        .gesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in
-                    guard !isPressed else { return }
-                    isPressed = true
-                    didLongPress = false
-                    onPressDown()
-                    // Schedule long-press activation
-                    longPressTask = Task {
-                        try? await Task.sleep(for: .seconds(longPressThreshold))
-                        guard !Task.isCancelled else { return }
-                        await MainActor.run {
-                            didLongPress = true
-                            onLongPressBegin()
-                        }
-                    }
-                }
-                .onEnded { _ in
-                    isPressed = false
-                    longPressTask?.cancel()
-                    longPressTask = nil
-                    if didLongPress {
-                        onLongPressEnd()
-                    } else {
-                        onTap()
-                    }
-                    didLongPress = false
-                }
-        )
-    }
-}
-
-#Preview {
+#Preview("Portrait") {
     CodingKeyboardView(onAction: { _ in })
         .background(alignment: .bottom) {
             Color(UIColor.systemGray6).ignoresSafeArea(edges: .bottom)
         }
         .safeAreaPadding(.bottom, 34)
+}
+
+#Preview("Landscape (simulated)") {
+    ScrollView(.horizontal) {
+        CodingKeyboardView(onAction: { _ in })
+            .frame(width: 750)
+    }
+    .background(Color(UIColor.systemGray6))
 }

@@ -1,6 +1,6 @@
 import Foundation
 
-// MARK: - Row Data
+// MARK: - Portrait Row Data
 // Layout: 10 columns, 6 rows
 // unitWidth = (totalWidth - 9 * gap) / 10
 
@@ -100,3 +100,93 @@ func buildRow5(shifted: Bool) -> [KeyDef] {
     r.append(KeyDef(label: "↵", action: .enter, units: 2.0))
     return r
 }
+// MARK: - Landscape Row Data
+// Layout: 5 rows, Mac-like, 14.5 total columns
+// unitWidth = (totalWidth - (totalCols - 1) * gap) / totalCols
+let landscapeTotalCols: CGFloat = 14.5
+
+// Landscape Row 0: `(1) 1 2 3 4 5 6 7 8 9 0 -(1) =(1) ⌫(1.5) — 14.5 units
+func buildLandscapeRow0(shifted: Bool) -> [KeyDef] {
+    var r = [KeyDef]()
+    r.append(.shiftable("`", "~", isShifted: shifted))
+    r.append(.shiftable("1", "!", isShifted: shifted))
+    r.append(.shiftable("2", "@", isShifted: shifted))
+    r.append(.shiftable("3", "#", isShifted: shifted))
+    r.append(.shiftable("4", "$", isShifted: shifted))
+    r.append(.shiftable("5", "%", isShifted: shifted))
+    r.append(.shiftable("6", "^", isShifted: shifted))
+    r.append(.shiftable("7", "&", isShifted: shifted))
+    r.append(.shiftable("8", "*", isShifted: shifted))
+    r.append(.shiftable("9", "(", isShifted: shifted))
+    r.append(.shiftable("0", ")", isShifted: shifted))
+    r.append(.shiftable("-", "_", isShifted: shifted))
+    r.append(.shiftable("=", "+", isShifted: shifted))
+    r.append(KeyDef(label: "⌫", action: .backspace, units: 1.5))
+    return r
+}
+
+// Landscape Row 1: ⇥(1.5) Q W E R T Y U I O P [(1) ](1) \(1) — 14.5 units
+func buildLandscapeRow1(shifted: Bool) -> [KeyDef] {
+    var r = [KeyDef]()
+    r.append(KeyDef(label: "⇥", action: .tab, units: 1.5))
+    r.append(.letter("Q", shifted: shifted))
+    r.append(.letter("W", shifted: shifted))
+    r.append(.letter("E", shifted: shifted))
+    r.append(.letter("R", shifted: shifted))
+    r.append(.letter("T", shifted: shifted))
+    r.append(.letter("Y", shifted: shifted))
+    r.append(.letter("U", shifted: shifted))
+    r.append(.letter("I", shifted: shifted))
+    r.append(.letter("O", shifted: shifted))
+    r.append(.letter("P", shifted: shifted))
+    r.append(.shiftable("[", "{", isShifted: shifted))
+    r.append(.shiftable("]", "}", isShifted: shifted))
+    r.append(.shiftable("\\", "|", isShifted: shifted))
+    return r
+}
+
+// Landscape Row 2: ☰(1.75) A S D F G H J K L ;(1) '(1) ↵(1.75) — 14.5 units
+func buildLandscapeRow2(shifted: Bool) -> [KeyDef] {
+    var r = [KeyDef]()
+    r.append(KeyDef(label: "☰", action: .openApp, units: 1.75))
+    r.append(.letter("A", shifted: shifted))
+    r.append(.letter("S", shifted: shifted))
+    r.append(.letter("D", shifted: shifted))
+    r.append(.letter("F", shifted: shifted))
+    r.append(.letter("G", shifted: shifted))
+    r.append(.letter("H", shifted: shifted))
+    r.append(.letter("J", shifted: shifted))
+    r.append(.letter("K", shifted: shifted))
+    r.append(.letter("L", shifted: shifted))
+    r.append(.shiftable(";", ":", isShifted: shifted))
+    r.append(.shiftable("'", "\"", isShifted: shifted))
+    r.append(KeyDef(label: "↵", action: .enter, units: 1.75))
+    return r
+}
+
+// Landscape Row 3: ⇧(2.25) Z X C V B N M ,(1) .(1) /(1) ⇧(2.25) — 14.5 units
+// The shift keys are rendered separately, so this returns the body only.
+func buildLandscapeRow3Body(shifted: Bool) -> [KeyDef] {
+    var r = [KeyDef]()
+    r.append(.letter("Z", shifted: shifted))
+    r.append(.letter("X", shifted: shifted))
+    r.append(.letter("C", shifted: shifted))
+    r.append(.letter("V", shifted: shifted))
+    r.append(.letter("B", shifted: shifted))
+    r.append(.letter("N", shifted: shifted))
+    r.append(.letter("M", shifted: shifted))
+    r.append(.shiftable(",", "<", isShifted: shifted))
+    r.append(.shiftable(".", ">", isShifted: shifted))
+    r.append(.shiftable("/", "?", isShifted: shifted))
+    return r
+}
+
+// Landscape Row 4: ↓(1.5) ␣(11.5) ↓(1.5) — 14.5 units
+func buildLandscapeRow4(shifted: Bool) -> [KeyDef] {
+    var r = [KeyDef]()
+    r.append(KeyDef(label: "↓", action: .dismiss, units: 1.5))
+    r.append(KeyDef(label: "␣", action: .space, units: 11.5))
+    r.append(KeyDef(label: "↓", action: .dismiss, units: 1.5))
+    return r
+}
+

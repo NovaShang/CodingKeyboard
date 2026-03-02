@@ -55,6 +55,7 @@
 				KeyButton.swift,
 				KeyCap.swift,
 				KeyModels.swift,
+				ShiftKeyCap.swift,
 			);
 			target = 98000DD42F54CDE900E0BBF6 /* KeyboardExtension */;
 		};
