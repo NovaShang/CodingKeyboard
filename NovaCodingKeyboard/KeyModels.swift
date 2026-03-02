@@ -1,6 +1,17 @@
 import Foundation
 import CoreGraphics
 
+// MARK: - ShiftState
+
+enum ShiftState {
+    case off
+    case on        // single tap: resets after next character key
+    case momentary // long press held: resets on finger lift, not on character key
+    case locked    // double tap: stays until shift is pressed again
+
+    var isActive: Bool { self != .off }
+}
+
 // MARK: - KeyAction
 
 enum KeyAction {

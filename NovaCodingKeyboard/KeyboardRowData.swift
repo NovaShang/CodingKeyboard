@@ -16,7 +16,7 @@ func buildRow0(shifted: Bool) -> [KeyDef] {
     r.append(.shiftable("'", "\"", isShifted: shifted))
     r.append(.shiftable("-", "_", isShifted: shifted))
     r.append(.shiftable("=", "+", isShifted: shifted))
-    r.append(KeyDef(label: "⌨", action: .dismiss, units: 1.5))
+    r.append(KeyDef(label: "↓", action: .dismiss, units: 1.5))
     return r
 }
 
@@ -71,6 +71,13 @@ func buildRow3(shifted: Bool) -> [KeyDef] {
 func buildRow4(shifted: Bool) -> [KeyDef] {
     var r = [KeyDef]()
     r.append(KeyDef(label: "⇧", action: .shift, units: 1.5))
+    r.append(contentsOf: buildRow4Body(shifted: shifted))
+    return r
+}
+
+// Row 4 body without the Shift key (used when Shift is rendered separately)
+func buildRow4Body(shifted: Bool) -> [KeyDef] {
+    var r = [KeyDef]()
     r.append(.letter("Z", shifted: shifted))
     r.append(.letter("X", shifted: shifted))
     r.append(.letter("C", shifted: shifted))
