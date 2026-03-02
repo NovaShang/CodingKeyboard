@@ -28,7 +28,10 @@ struct KeyButton: View {
             style: style,
             width: keyCapWidth,
             height: keyHeight,
-            action: { onTap(key.action) }
+            action: { onTap(key.action) },
+            normalLabel: key.normalLabel,
+            shiftedLabel: key.shiftedLabel,
+            isShifted: key.isShifted
         )
     }
 }

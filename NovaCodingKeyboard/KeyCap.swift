@@ -18,20 +18,62 @@ struct KeyCap: View {
     let width: CGFloat
     let height: CGFloat
     let action: @MainActor () -> Void
+    /// If set, the key shows two labels: shiftedLabel on top, normalLabel on bottom.
+    let normalLabel: String?
+    let shiftedLabel: String?
+    let isShifted: Bool
+
+    init(label: String, style: KeyCapStyle, width: CGFloat, height: CGFloat,
+         action: @MainActor @escaping () -> Void,
+         normalLabel: String? = nil, shiftedLabel: String? = nil, isShifted: Bool = false) {
+        self.label = label
+        self.style = style
+        self.width = width
+        self.height = height
+        self.action = action
+        self.normalLabel = normalLabel
+        self.shiftedLabel = shiftedLabel
+        self.isShifted = isShifted
+    }
 
     var body: some View {
         Button(action: action) {
-            Text(label)
-                .font(.system(size: 15, weight: .medium, design: .monospaced))
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(backgroundColor)
-                )
-                .foregroundStyle(.primary)
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(backgroundColor)
+                keyContent
+            }
         }
         .buttonStyle(.plain)
         .frame(width: width, height: height)
+    }
+
+    @ViewBuilder
+    private var keyContent: some View {
+        if let normal = normalLabel, let shifted = shiftedLabel {
+            // Dual-label layout: shifted on top (secondary), normal on bottom (primary)
+            VStack(spacing: 0) {
+                Text(shifted)
+                    .font(.system(size: isShifted ? 15 : 11,
+                                  weight: isShifted ? .medium : .regular,
+                                  design: .monospaced))
+                    .foregroundStyle(isShifted ? Color.primary : Color.secondary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                Text(normal)
+                    .font(.system(size: isShifted ? 11 : 15,
+                                  weight: isShifted ? .regular : .medium,
+                                  design: .monospaced))
+                    .foregroundStyle(isShifted ? Color.secondary : Color.primary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .padding(.vertical, 3)
+        } else {
+            // Single-label layout for letters, modifiers, space etc.
+            Text(label)
+                .font(.system(size: 15, weight: .medium, design: .monospaced))
+                .foregroundStyle(Color.primary)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
     }
 
     private var backgroundColor: Color {
@@ -53,21 +95,34 @@ struct KeyCap: View {
         }
     }
 }
-#Preview("Light") {
+#Preview("Light — unshifted") {
     HStack(spacing: 6) {
-        KeyCap(label: "a",     style: .normal,   width: 44, height: 44, action: {})
-        KeyCap(label: "⇧",    style: .modifier, width: 66, height: 44, action: {})
-        KeyCap(label: "space", style: .space,    width: 88, height: 44, action: {})
+        KeyCap(label: "1", style: .normal, width: 44, height: 44, action: {},
+               normalLabel: "1", shiftedLabel: "!", isShifted: false)
+        KeyCap(label: "a", style: .normal, width: 44, height: 44, action: {})
+        KeyCap(label: "⇧", style: .modifier, width: 66, height: 44, action: {})
     }
     .padding()
     .background(Color(UIColor.systemGray6))
 }
 
-#Preview("Dark") {
+#Preview("Light — shifted") {
     HStack(spacing: 6) {
-        KeyCap(label: "a",     style: .normal,   width: 44, height: 44, action: {})
-        KeyCap(label: "⇧",    style: .modifier, width: 66, height: 44, action: {})
-        KeyCap(label: "space", style: .space,    width: 88, height: 44, action: {})
+        KeyCap(label: "!", style: .normal, width: 44, height: 44, action: {},
+               normalLabel: "1", shiftedLabel: "!", isShifted: true)
+        KeyCap(label: "A", style: .normal, width: 44, height: 44, action: {})
+        KeyCap(label: "⇧", style: .modifier, width: 66, height: 44, action: {})
+    }
+    .padding()
+    .background(Color(UIColor.systemGray6))
+}
+
+#Preview("Dark — unshifted") {
+    HStack(spacing: 6) {
+        KeyCap(label: "1", style: .normal, width: 44, height: 44, action: {},
+               normalLabel: "1", shiftedLabel: "!", isShifted: false)
+        KeyCap(label: "a", style: .normal, width: 44, height: 44, action: {})
+        KeyCap(label: "⇧", style: .modifier, width: 66, height: 44, action: {})
     }
     .padding()
     .background(Color(UIColor.systemGray6))

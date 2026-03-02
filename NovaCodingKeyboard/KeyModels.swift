@@ -18,11 +18,21 @@ struct KeyDef {
     let action: KeyAction
     /// Width in standard key units (1.0 = one standard key)
     var units: CGFloat
+    /// The unshifted label, shown in the lower/primary position (nil for non-shiftable keys)
+    let normalLabel: String?
+    /// The shifted label, shown in the upper/secondary position (nil for non-shiftable keys)
+    let shiftedLabel: String?
+    /// Whether the key is currently in shifted state (affects which label is primary)
+    let isShifted: Bool
 
-    init(label: String, action: KeyAction, units: CGFloat = 1.0) {
+    init(label: String, action: KeyAction, units: CGFloat = 1.0,
+         normalLabel: String? = nil, shiftedLabel: String? = nil, isShifted: Bool = false) {
         self.label = label
         self.action = action
         self.units = units
+        self.normalLabel = normalLabel
+        self.shiftedLabel = shiftedLabel
+        self.isShifted = isShifted
     }
 
     static func letter(_ upper: String, shifted: Bool) -> KeyDef {
@@ -30,10 +40,11 @@ struct KeyDef {
         return KeyDef(label: ch, action: .character(ch))
     }
 
-    /// A key that shows its unshifted character normally and its shifted character when Shift is active.
+    /// A key that displays both its normal and shifted labels, with styling based on current shift state.
     static func shiftable(_ normal: String, _ shiftedChar: String, isShifted: Bool) -> KeyDef {
         let ch = isShifted ? shiftedChar : normal
-        return KeyDef(label: ch, action: .character(ch))
+        return KeyDef(label: ch, action: .character(ch),
+                      normalLabel: normal, shiftedLabel: shiftedChar, isShifted: isShifted)
     }
 
     static func char(_ s: String) -> KeyDef {
