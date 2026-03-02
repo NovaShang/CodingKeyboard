@@ -18,13 +18,13 @@ struct CodingKeyboardView: View {
             let halfUnit = (unitWidth + gap) / 2
 
             VStack(alignment: .leading, spacing: rowSpacing) {
-                KeyboardRow(keys: buildRow1(), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle)
+                KeyboardRow(keys: buildRow1(shifted: isShifted), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle)
                 KeyboardRow(keys: buildRow2(shifted: isShifted), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle)
                     .padding(.leading, halfUnit)
                 KeyboardRow(keys: buildRow3(shifted: isShifted), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle)
                 KeyboardRow(keys: buildRow4(shifted: isShifted), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle)
                     .padding(.leading, (unitWidth + gap) * 0.25)
-                KeyboardRow(keys: buildRow5(), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle)
+                KeyboardRow(keys: buildRow5(shifted: isShifted), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle)
             }
             .padding(.top, 8)
         }

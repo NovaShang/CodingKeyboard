@@ -30,6 +30,12 @@ struct KeyDef {
         return KeyDef(label: ch, action: .character(ch))
     }
 
+    /// A key that shows its unshifted character normally and its shifted character when Shift is active.
+    static func shiftable(_ normal: String, _ shiftedChar: String, isShifted: Bool) -> KeyDef {
+        let ch = isShifted ? shiftedChar : normal
+        return KeyDef(label: ch, action: .character(ch))
+    }
+
     static func char(_ s: String) -> KeyDef {
         KeyDef(label: s, action: .character(s))
     }

@@ -2,12 +2,19 @@ import Foundation
 
 // MARK: - Row Data
 
-func buildRow1() -> [KeyDef] {
+func buildRow1(shifted: Bool) -> [KeyDef] {
     var r = [KeyDef]()
-    r.append(.char("1")); r.append(.char("2")); r.append(.char("3"))
-    r.append(.char("4")); r.append(.char("5")); r.append(.char("6"))
-    r.append(.char("7")); r.append(.char("8")); r.append(.char("9"))
-    r.append(.char("0"))
+    // Standard US keyboard: shift+number = symbol
+    r.append(.shiftable("1", "!", isShifted: shifted))
+    r.append(.shiftable("2", "@", isShifted: shifted))
+    r.append(.shiftable("3", "#", isShifted: shifted))
+    r.append(.shiftable("4", "$", isShifted: shifted))
+    r.append(.shiftable("5", "%", isShifted: shifted))
+    r.append(.shiftable("6", "^", isShifted: shifted))
+    r.append(.shiftable("7", "&", isShifted: shifted))
+    r.append(.shiftable("8", "*", isShifted: shifted))
+    r.append(.shiftable("9", "(", isShifted: shifted))
+    r.append(.shiftable("0", ")", isShifted: shifted))
     r.append(KeyDef(label: "⌫", action: .backspace))
     return r  // 11 × 1.0 units
 }
@@ -43,18 +50,23 @@ func buildRow4(shifted: Bool) -> [KeyDef] {
     r.append(.letter("C", shifted: shifted)); r.append(.letter("V", shifted: shifted))
     r.append(.letter("B", shifted: shifted)); r.append(.letter("N", shifted: shifted))
     r.append(.letter("M", shifted: shifted))
-    r.append(.char(",")); r.append(.char("."))
+    r.append(.shiftable(",", "<", isShifted: shifted))
+    r.append(.shiftable(".", ">", isShifted: shifted))
     return r
 }
 
-func buildRow5() -> [KeyDef] {
+func buildRow5(shifted: Bool) -> [KeyDef] {
     var r = [KeyDef]()
     // 9 × 1.0 + 1 × 2.0 = 11.0 units — fills the full row
-    r.append(.char("[")); r.append(.char("]"))
-    r.append(.char("-")); r.append(.char("+"))
+    r.append(.shiftable("[", "{", isShifted: shifted))
+    r.append(.shiftable("]", "}", isShifted: shifted))
+    r.append(.shiftable("-", "_", isShifted: shifted))
+    r.append(.shiftable("=", "+", isShifted: shifted))
     r.append(KeyDef(label: "space", action: .space, units: 2.0))
-    r.append(.char(";")); r.append(.char("'"))
-    r.append(.char("/")); r.append(.char("\\"))
-    r.append(.char("`"))
+    r.append(.shiftable(";", ":", isShifted: shifted))
+    r.append(.shiftable("'", "\"", isShifted: shifted))
+    r.append(.shiftable("/", "?", isShifted: shifted))
+    r.append(.shiftable("\\", "|", isShifted: shifted))
+    r.append(.shiftable("`", "~", isShifted: shifted))
     return r
 }
