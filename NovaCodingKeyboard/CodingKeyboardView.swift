@@ -7,22 +7,23 @@ struct CodingKeyboardView: View {
     @State private var isShifted = false
 
     private let keyHeight: CGFloat = 44
+    private let shortKeyHeight: CGFloat = 34
     private let gap: CGFloat = 6
     private let totalCols: CGFloat = 10
     private let rowSpacing: CGFloat = 8
+    private let sidePadding: CGFloat = 8
 
     var body: some View {
         GeometryReader { geo in
-            let totalWidth = geo.size.width
+            let totalWidth = geo.size.width - sidePadding * 2
             let unitWidth = (totalWidth - (totalCols - 1) * gap) / totalCols
             let halfUnit = (unitWidth + gap) / 2  // 0.5-unit indent for centering 9-key rows
 
             VStack(alignment: .leading, spacing: rowSpacing) {
                 // Row 0: ⇥(2x) [ ] \ ` / ' ⌨ — 9 units, right-aligned (1-unit gap on left)
-                let row0LeadPad = unitWidth + gap
-                KeyboardRow(keys: buildRow0(shifted: isShifted), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle)
+                KeyboardRow(keys: buildRow0(shifted: isShifted), unitWidth: unitWidth, keyHeight: shortKeyHeight, gap: gap, onTap: handle)
                 // Row 1: numbers (10 keys, full width)
-                KeyboardRow(keys: buildRow1(shifted: isShifted), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle)
+                KeyboardRow(keys: buildRow1(shifted: isShifted), unitWidth: unitWidth, keyHeight: shortKeyHeight, gap: gap, onTap: handle)
                 // Row 2: QWERTY (10 keys, full width)
                 KeyboardRow(keys: buildRow2(shifted: isShifted), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle)
                 // Row 3: ASDFGHJKL (9 keys, centered with 0.5-unit padding each side)
@@ -31,11 +32,12 @@ struct CodingKeyboardView: View {
                 // Row 4: Shift(1.5) + ZXCVBNM + Backspace(1.5) (10 units, full width)
                 KeyboardRow(keys: buildRow4(shifted: isShifted), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle)
                 // Row 5: , . - = Space(2x) ; ' / Enter (10 units, full width)
-                KeyboardRow(keys: buildRow5(shifted: isShifted), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle)
+                KeyboardRow(keys: buildRow5(shifted: isShifted), unitWidth: unitWidth, keyHeight: shortKeyHeight, gap: gap, onTap: handle)
             }
             .padding(.top, 8)
+            .padding(.horizontal, sidePadding)
         }
-        .frame(height: keyHeight * 6 + rowSpacing * 5 + 8)
+        .frame(height: keyHeight * 3 + shortKeyHeight * 3 + rowSpacing * 5 + 8)
     }
 
     private func handle(_ action: KeyAction) {
