@@ -29,6 +29,7 @@ struct KeyCap: View {
 
     @State private var isPressed = false
     @State private var repeatTask: Task<Void, Never>? = nil
+    private let feedbackGenerator = UIImpactFeedbackGenerator(style: .light)
 
     init(
         label: String,
@@ -57,6 +58,7 @@ struct KeyCap: View {
             keyContent
         }
         .frame(width: width, height: height)
+        .onAppear { feedbackGenerator.prepare() }
         .scaleEffect(isPressed ? 0.94 : 1.0)
         .animation(.easeInOut(duration: 0.08), value: isPressed)
         .gesture(
@@ -64,14 +66,14 @@ struct KeyCap: View {
                 .onChanged { _ in
                     guard !isPressed else { return }
                     isPressed = true
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    feedbackGenerator.impactOccurred()
                     action()
                     // Start repeat after initial delay
                     repeatTask = Task {
                         try? await Task.sleep(for: .seconds(repeatDelay))
                         while !Task.isCancelled {
                             await MainActor.run {
-                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                feedbackGenerator.impactOccurred()
                                 action()
                             }
                             try? await Task.sleep(for: .seconds(repeatInterval))
