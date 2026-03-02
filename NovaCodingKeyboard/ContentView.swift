@@ -27,6 +27,8 @@ struct ContentView: View {
         case .backspace:        if !typedText.isEmpty { typedText.removeLast() }
         case .enter:            typedText.append("\n")
         case .space:            typedText.append(" ")
+        case .tab:              typedText.append("\t")
+        case .openApp:          break  // already in the app
         case .shift:            break
         case .dismiss:          break  // no-op in app preview
         }

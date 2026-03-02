@@ -3,9 +3,9 @@ import SwiftUI
 // MARK: - KeyCapStyle
 
 enum KeyCapStyle {
-    case normal  // white key
-    case modifier  // darker key (shift, backspace, enter, tab)
-    case space  // space bar
+    case normal    // white key
+    case modifier  // action key (shift, backspace, enter, tab, dismiss, openApp)
+    case space     // space bar
 }
 
 // MARK: - KeyCap
@@ -22,6 +22,13 @@ struct KeyCap: View {
     let normalLabel: String?
     let shiftedLabel: String?
     let isShifted: Bool
+
+    // Key repeat timing (matches system keyboard feel)
+    private let repeatDelay: TimeInterval = 0.4
+    private let repeatInterval: TimeInterval = 0.1
+
+    @State private var isPressed = false
+    @State private var repeatTask: Task<Void, Never>? = nil
 
     init(
         label: String,
@@ -44,18 +51,39 @@ struct KeyCap: View {
     }
 
     var body: some View {
-        Button(action: {
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            action()
-        }) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(backgroundColor)
-                keyContent
-            }
+        ZStack {
+            RoundedRectangle(cornerRadius: 8)
+                .fill(backgroundColor)
+            keyContent
         }
-        .buttonStyle(.plain)
         .frame(width: width, height: height)
+        .scaleEffect(isPressed ? 0.94 : 1.0)
+        .animation(.easeInOut(duration: 0.08), value: isPressed)
+        .gesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    guard !isPressed else { return }
+                    isPressed = true
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    action()
+                    // Start repeat after initial delay
+                    repeatTask = Task {
+                        try? await Task.sleep(for: .seconds(repeatDelay))
+                        while !Task.isCancelled {
+                            await MainActor.run {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                action()
+                            }
+                            try? await Task.sleep(for: .seconds(repeatInterval))
+                        }
+                    }
+                }
+                .onEnded { _ in
+                    isPressed = false
+                    repeatTask?.cancel()
+                    repeatTask = nil
+                }
+        )
     }
 
     @ViewBuilder
@@ -67,7 +95,7 @@ struct KeyCap: View {
                     .font(
                         .system(
                             size: isShifted ? 15 : 11,
-                            weight: isShifted ? .bold : .regular,
+                            weight: isShifted ? .semibold : .regular,
                             design: .monospaced
                         )
                     )
@@ -83,7 +111,7 @@ struct KeyCap: View {
                     .font(
                         .system(
                             size: isShifted ? 11 : 15,
-                            weight: isShifted ? .regular : .bold,
+                            weight: isShifted ? .regular : .semibold,
                             design: .monospaced
                         )
                     )
@@ -104,7 +132,7 @@ struct KeyCap: View {
                 .font(
                     .system(
                         size: style == .modifier ? 24 : 19,
-                        weight: style == .modifier ? .regular : .bold,
+                        weight: style == .modifier ? .regular : .semibold,
                         design: style == .modifier ? .default : .monospaced
                     )
                 )
@@ -130,8 +158,8 @@ struct KeyCap: View {
             return Color(
                 UIColor(dynamicProvider: { t in
                     t.userInterfaceStyle == .dark
-                        ? UIColor(white: 0.38, alpha: 1)
-                        : UIColor(white: 0.72, alpha: 1)
+                        ? UIColor(white: 0.20, alpha: 1)
+                        : UIColor(white: 0.88, alpha: 1)
                 })
             )
         }

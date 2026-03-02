@@ -4,18 +4,17 @@ import Foundation
 // Layout: 10 columns, 6 rows
 // unitWidth = (totalWidth - 9 * gap) / 10
 
-// Row 0: tab(2x) + displaced symbols + dismiss — 9 units, right-aligned
-// ⇥(2) [ ] \ ` / ' ⌨(1) = 9 units
+// Row 0: ⇥(1.5) [ ] ' ; - = ☰(1.0) ↓(1.5) — 10 units
 func buildRow0(shifted: Bool) -> [KeyDef] {
     var r = [KeyDef]()
-    r.append(KeyDef(label: "⇥", action: .character("\t"), units: 1.5))
+    r.append(KeyDef(label: "⇥", action: .tab, units: 1.5))
     r.append(.shiftable("[", "{", isShifted: shifted))
     r.append(.shiftable("]", "}", isShifted: shifted))
     r.append(.shiftable("'", "\"", isShifted: shifted))
     r.append(.shiftable(";", ":", isShifted: shifted))
-    r.append(.shiftable("'", "\"", isShifted: shifted))
     r.append(.shiftable("-", "_", isShifted: shifted))
     r.append(.shiftable("=", "+", isShifted: shifted))
+    r.append(KeyDef(label: "☰", action: .openApp, units: 1.0))
     r.append(KeyDef(label: "↓", action: .dismiss, units: 1.5))
     return r
 }
@@ -89,12 +88,12 @@ func buildRow4Body(shifted: Bool) -> [KeyDef] {
     return r
 }
 
-// Row 5: - = ` \ / Space(3x) , . ; Enter(2x) — 5×1.0 + 3.0 + 2.0 = 10 units
+// Row 5: \ / `(1.0) ␣(3.0) , . ↵(2.0) — 2+1+3+2+2 = 10 units
 func buildRow5(shifted: Bool) -> [KeyDef] {
     var r = [KeyDef]()
-    r.append(.shiftable("`", "~", isShifted: shifted))
     r.append(.shiftable("\\", "|", isShifted: shifted))
     r.append(.shiftable("/", "?", isShifted: shifted))
+    r.append(.shiftable("`", "~", isShifted: shifted))
     r.append(KeyDef(label: "␣", action: .space, units: 3.0))
     r.append(.shiftable(",", "<", isShifted: shifted))
     r.append(.shiftable(".", ">", isShifted: shifted))

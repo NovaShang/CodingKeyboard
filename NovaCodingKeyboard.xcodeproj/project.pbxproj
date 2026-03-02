@@ -58,12 +58,20 @@
 			);
 			target = 98000DD42F54CDE900E0BBF6 /* KeyboardExtension */;
 		};
+		98000DF62F554E1800E0BBF6 /* Exceptions for "NovaCodingKeyboard" folder in "NovaCodingKeyboard" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 98000DB82F54A56800E0BBF6 /* NovaCodingKeyboard */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		98000DBB2F54A56800E0BBF6 /* NovaCodingKeyboard */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
+				98000DF62F554E1800E0BBF6 /* Exceptions for "NovaCodingKeyboard" folder in "NovaCodingKeyboard" target */,
 				98000DEF2F5504D300E0BBF6 /* Exceptions for "NovaCodingKeyboard" folder in "KeyboardExtension" target */,
 			);
 			path = NovaCodingKeyboard;
@@ -377,6 +385,7 @@
 				DEVELOPMENT_TEAM = 7M23245ZBD;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = NovaCodingKeyboard/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -410,6 +419,7 @@
 				DEVELOPMENT_TEAM = 7M23245ZBD;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = NovaCodingKeyboard/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

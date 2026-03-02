@@ -50,12 +50,12 @@ struct CodingKeyboardView: View {
                     KeyboardRow(keys: buildRow4Body(shifted: isShifted), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle)
                 }
                 // Row 5: , . - = Space(2x) ; ' / Enter (10 units, full width)
-                KeyboardRow(keys: buildRow5(shifted: isShifted), unitWidth: unitWidth, keyHeight: shortKeyHeight, gap: gap, onTap: handle)
+                KeyboardRow(keys: buildRow5(shifted: isShifted), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle)
             }
             .padding(.top, 8)
             .padding(.horizontal, sidePadding)
         }
-        .frame(height: keyHeight * 3 + shortKeyHeight * 3 + rowSpacing * 5 + 8)
+        .frame(height: keyHeight * 4 + shortKeyHeight * 2 + rowSpacing * 5 + 8)
     }
 
     // MARK: - Shift gesture handlers
@@ -63,7 +63,7 @@ struct CodingKeyboardView: View {
     // Finger touched down: detect double-tap by comparing to the last release time.
     private func handleShiftPressDown() {
         let timeSinceRelease = Date().timeIntervalSince(lastShiftReleaseTime)
-        if timeSinceRelease < 0.35 && shiftState == .on {
+        if timeSinceRelease < 0.25 && shiftState == .on {
             // Second tap quickly after the first → lock
             shiftState = .locked
             shiftPressWasDoubleTap = true
@@ -143,7 +143,7 @@ private struct ShiftKeyCap: View {
     @State private var longPressTask: Task<Void, Never>? = nil
     @State private var didLongPress = false
 
-    private let longPressThreshold: TimeInterval = 0.3
+    private let longPressThreshold: TimeInterval = 0.15
 
     private var label: String {
         shiftState == .locked ? "⇪" : "⇧"

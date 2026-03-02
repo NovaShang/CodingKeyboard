@@ -18,8 +18,10 @@ enum KeyAction {
     case character(String)
     case backspace
     case shift
+    case tab
     case enter
     case space
+    case openApp  // open the main app (keyboard settings)
     case dismiss
 }
 
