@@ -31,7 +31,7 @@ func buildRow2(shifted: Bool) -> [KeyDef] {
 
 func buildRow3(shifted: Bool) -> [KeyDef] {
     var r = [KeyDef]()
-    r.append(KeyDef(label: "tab", action: .character("\t")))
+    r.append(KeyDef(label: "⇥", action: .character("\t")))
     r.append(.letter("A", shifted: shifted)); r.append(.letter("S", shifted: shifted))
     r.append(.letter("D", shifted: shifted)); r.append(.letter("F", shifted: shifted))
     r.append(.letter("G", shifted: shifted)); r.append(.letter("H", shifted: shifted))
@@ -62,7 +62,7 @@ func buildRow5(shifted: Bool) -> [KeyDef] {
     r.append(.shiftable("]", "}", isShifted: shifted))
     r.append(.shiftable("-", "_", isShifted: shifted))
     r.append(.shiftable("=", "+", isShifted: shifted))
-    r.append(KeyDef(label: "space", action: .space, units: 2.0))
+    r.append(KeyDef(label: "␣", action: .space, units: 2.0))
     r.append(.shiftable(";", ":", isShifted: shifted))
     r.append(.shiftable("'", "\"", isShifted: shifted))
     r.append(.shiftable("/", "?", isShifted: shifted))

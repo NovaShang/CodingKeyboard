@@ -55,13 +55,13 @@ struct KeyCap: View {
             VStack(spacing: 0) {
                 Text(shifted)
                     .font(.system(size: isShifted ? 15 : 11,
-                                  weight: isShifted ? .medium : .regular,
+                                  weight: isShifted ? .bold : .regular,
                                   design: .monospaced))
                     .foregroundStyle(isShifted ? Color.primary : Color.secondary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 Text(normal)
                     .font(.system(size: isShifted ? 11 : 15,
-                                  weight: isShifted ? .regular : .medium,
+                                  weight: isShifted ? .regular : .bold,
                                   design: .monospaced))
                     .foregroundStyle(isShifted ? Color.secondary : Color.primary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -70,7 +70,9 @@ struct KeyCap: View {
         } else {
             // Single-label layout for letters, modifiers, space etc.
             Text(label)
-                .font(.system(size: 15, weight: .medium, design: .monospaced))
+                .font(.system(size: 17,
+                              weight: style == .modifier ? .regular : .bold,
+                              design: .monospaced))
                 .foregroundStyle(Color.primary)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -86,11 +88,10 @@ struct KeyCap: View {
                     : UIColor(white: 1.0, alpha: 1)
             }))
         case .modifier:
-            // Light: light gray; Dark: slightly darker than normal — matches system modifier key
             return Color(UIColor(dynamicProvider: { t in
                 t.userInterfaceStyle == .dark
-                    ? UIColor(white: 0.25, alpha: 1)
-                    : UIColor(white: 0.82, alpha: 1)
+                    ? UIColor(white: 0.38, alpha: 1)
+                    : UIColor(white: 0.72, alpha: 1)
             }))
         }
     }
