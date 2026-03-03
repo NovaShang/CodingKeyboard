@@ -4,7 +4,7 @@ import SwiftUI
 
 enum KeyCapStyle {
     case normal    // white key
-    case modifier  // action key (shift, backspace, enter, tab, dismiss, openApp)
+    case modifier  // action key (shift, backspace, enter, tab, dismiss)
     case space     // space bar
 }
 

@@ -4,18 +4,19 @@ import Foundation
 // Layout: 10 columns, 6 rows
 // unitWidth = (totalWidth - 9 * gap) / 10
 
-// Row 0: ⇥(1.5) [ ] ' ; - = ☰(1.0) ↓(1.5) — 10 units
+// Row 0: ⇥(1) ←(1) →(1) [ ] ' ; - = ↓(1) — 10 units
 func buildRow0(shifted: Bool) -> [KeyDef] {
     var r = [KeyDef]()
-    r.append(KeyDef(label: "⇥", action: .tab, units: 1.5))
+    r.append(KeyDef(label: "⇥", action: .tab, units: 1.0))
+    r.append(KeyDef(label: "←", action: .cursorLeft, units: 1.0))
+    r.append(KeyDef(label: "→", action: .cursorRight, units: 1.0))
     r.append(.shiftable("[", "{", isShifted: shifted))
     r.append(.shiftable("]", "}", isShifted: shifted))
     r.append(.shiftable("'", "\"", isShifted: shifted))
     r.append(.shiftable(";", ":", isShifted: shifted))
     r.append(.shiftable("-", "_", isShifted: shifted))
     r.append(.shiftable("=", "+", isShifted: shifted))
-    r.append(KeyDef(label: "☰", action: .openApp, units: 1.0))
-    r.append(KeyDef(label: "↓", action: .dismiss, units: 1.5))
+    r.append(KeyDef(label: "↓", action: .dismiss, units: 1.0))
     return r
 }
 
@@ -145,10 +146,9 @@ func buildLandscapeRow1(shifted: Bool) -> [KeyDef] {
     return r
 }
 
-// Landscape Row 2: ☰(1.75) A S D F G H J K L ;(1) '(1) ↵(1.75) — 14.5 units
+// Landscape Row 2: A S D F G H J K L ;(1) '(1) ↵(3.5) — 14.5 units
 func buildLandscapeRow2(shifted: Bool) -> [KeyDef] {
     var r = [KeyDef]()
-    r.append(KeyDef(label: "☰", action: .openApp, units: 1.75))
     r.append(.letter("A", shifted: shifted))
     r.append(.letter("S", shifted: shifted))
     r.append(.letter("D", shifted: shifted))
@@ -160,7 +160,7 @@ func buildLandscapeRow2(shifted: Bool) -> [KeyDef] {
     r.append(.letter("L", shifted: shifted))
     r.append(.shiftable(";", ":", isShifted: shifted))
     r.append(.shiftable("'", "\"", isShifted: shifted))
-    r.append(KeyDef(label: "↵", action: .enter, units: 1.75))
+    r.append(KeyDef(label: "↵", action: .enter, units: 3.5))
     return r
 }
 

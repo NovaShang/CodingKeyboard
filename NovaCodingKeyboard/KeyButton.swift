@@ -16,7 +16,7 @@ struct KeyButton: View {
 
     var style: KeyCapStyle {
         switch key.action {
-        case .backspace, .enter, .shift, .tab, .openApp, .dismiss: return .modifier
+        case .backspace, .enter, .shift, .tab, .cursorLeft, .cursorRight, .dismiss: return .modifier
         case .space:                     return .space
         default:                         return .normal
         }

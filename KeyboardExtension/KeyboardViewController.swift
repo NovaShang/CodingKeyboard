@@ -43,10 +43,11 @@ class KeyboardViewController: UIInputViewController {
         case .space:
             proxy.insertText(" ")
         case .tab:
-            proxy.insertText("\t")  // default: insert tab; replace with autocomplete logic later
-        case .openApp:
-            let url = URL(string: "novakeyboard://")!
-            _ = extensionContext?.open(url, completionHandler: nil)
+            proxy.insertText("\t")
+        case .cursorLeft:
+            proxy.adjustTextPosition(byCharacterOffset: -1)
+        case .cursorRight:
+            proxy.adjustTextPosition(byCharacterOffset: 1)
         case .shift:
             break  // shift state is managed inside CodingKeyboardView
         case .dismiss:

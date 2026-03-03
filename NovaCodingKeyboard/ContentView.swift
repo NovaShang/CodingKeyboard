@@ -2,40 +2,35 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var typedText = ""
+    @FocusState private var isFocused: Bool
 
     var body: some View {
-        ScrollView {
-            Text(typedText.isEmpty ? "Start typing..." : typedText)
-                .font(.system(.body, design: .monospaced))
-                .foregroundColor(typedText.isEmpty ? .secondary : .primary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding()
-        }
-        .background(Color(UIColor.secondarySystemBackground))
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            CodingKeyboardView(onAction: handleAction)
-                .background(alignment: .bottom) {
-                    Color(UIColor.systemGray6)
-                        .ignoresSafeArea(edges: .bottom)
-                }
-        }
-    }
+        VStack(spacing: 0) {
+            // Hint banner
+            HStack(spacing: 8) {
+                Image(systemName: "globe")
+                    .font(.body.weight(.semibold))
+                Text("Long-press  \(Image(systemName: "globe"))  on the keyboard to switch to **Nova Coding Keyboard**")
+                    .font(.subheadline)
+            }
+            .foregroundStyle(.secondary)
+            .padding(.horizontal)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.bar)
 
-    private func handleAction(_ action: KeyAction) {
-        switch action {
-        case .character(let c): typedText.append(c)
-        case .backspace:        if !typedText.isEmpty { typedText.removeLast() }
-        case .enter:            typedText.append("\n")
-        case .space:            typedText.append(" ")
-        case .tab:              typedText.append("\t")
-        case .openApp:          break  // already in the app
-        case .shift:            break
-        case .dismiss:          break  // no-op in app preview
+            // Text area
+            TextEditor(text: $typedText)
+                .font(.system(.body, design: .monospaced))
+                .scrollContentBackground(.hidden)
+                .padding()
+                .background(Color(UIColor.secondarySystemBackground))
+                .focused($isFocused)
+                .onAppear { isFocused = true }
         }
     }
 }
 
 #Preview {
     ContentView()
-        .safeAreaPadding(.bottom, 34)
 }

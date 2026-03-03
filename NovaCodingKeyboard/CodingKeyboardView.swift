@@ -92,7 +92,7 @@ struct CodingKeyboardView: View {
                 )
                 KeyboardRow(keys: buildRow4Body(shifted: isShifted), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle)
             }
-            KeyboardRow(keys: buildRow5(shifted: isShifted), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle)
+            KeyboardRow(keys: buildRow5(shifted: isShifted), unitWidth: unitWidth, keyHeight: shortKeyHeight, gap: gap, onTap: handle)
         }
         .padding(.top, 8)
         .padding(.horizontal, sidePadding)
@@ -203,17 +203,6 @@ struct CodingKeyboardView: View {
         onAction(action)
     }
 }
-
-// MARK: - ShiftKeyCap
-// Renders the Shift key and dispatches three gesture events to the parent:
-//   onPressDown   — finger touched down (used for double-tap detection)
-//   onTap         — short press completed (< 300ms)
-//   onLongPressBegin / onLongPressEnd — hold ≥ 300ms / finger lifted
-//
-// Uses a single DragGesture(minimumDistance: 0) for the full down→up lifecycle,
-// with a cancellable async Task for the long-press threshold. This avoids the
-// SwiftUI issue where LongPressGesture cancels DragGesture and prevents onEnded.
-
 
 
 #Preview("Portrait") {

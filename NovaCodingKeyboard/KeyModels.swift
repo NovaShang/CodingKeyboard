@@ -21,7 +21,8 @@ enum KeyAction {
     case tab
     case enter
     case space
-    case openApp  // open the main app (keyboard settings)
+    case cursorLeft
+    case cursorRight
     case dismiss
 }
 
