@@ -146,8 +146,9 @@ func buildLandscapeRow1(shifted: Bool) -> [KeyDef] {
     return r
 }
 
-// Landscape Row 2: A S D F G H J K L ;(1) '(1) ↵(3.5) — 14.5 units
-func buildLandscapeRow2(shifted: Bool) -> [KeyDef] {
+// Landscape Row 2: ⇪(2) A S D F G H J K L ;(1) '(1) ↵(1.5) — 14.5 units
+// The caps lock key is rendered separately, so this returns the body only.
+func buildLandscapeRow2Body(shifted: Bool) -> [KeyDef] {
     var r = [KeyDef]()
     r.append(.letter("A", shifted: shifted))
     r.append(.letter("S", shifted: shifted))
@@ -160,7 +161,7 @@ func buildLandscapeRow2(shifted: Bool) -> [KeyDef] {
     r.append(.letter("L", shifted: shifted))
     r.append(.shiftable(";", ":", isShifted: shifted))
     r.append(.shiftable("'", "\"", isShifted: shifted))
-    r.append(KeyDef(label: "↵", action: .enter, units: 3.5))
+    r.append(KeyDef(label: "↵", action: .enter, units: 1.5))
     return r
 }
 

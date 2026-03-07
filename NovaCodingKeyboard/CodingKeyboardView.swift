@@ -26,7 +26,7 @@ struct CodingKeyboardView: View {
     private let sidePadding: CGFloat = 8
 
     // Landscape constants
-    private let lKeyHeight: CGFloat = 40
+    private let lKeyHeight: CGFloat = 34
     private let lGap: CGFloat = 5
     private let lRowSpacing: CGFloat = 6
     private let lSidePadding: CGFloat = 6
@@ -43,11 +43,15 @@ struct CodingKeyboardView: View {
         lKeyHeight * 5 + lRowSpacing * 4 + 6
     }
 
+    private var isIPad: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad
+    }
+
     @State private var currentHeight: CGFloat = 0
 
     var body: some View {
         GeometryReader { geo in
-            let landscape = geo.size.width > 500
+            let landscape = isIPad || geo.size.width > 500
             let targetHeight = landscape ? landscapeHeight : portraitHeight
 
             Group {
@@ -105,14 +109,27 @@ struct CodingKeyboardView: View {
         let totalWidth = geo.size.width - lSidePadding * 2
         let unitWidth = (totalWidth - (landscapeTotalCols - 1) * lGap) / landscapeTotalCols
         let shiftKeyWidth = unitWidth * 2.25 + lGap * 1.25  // 2.25 units
+        let capsLockWidth = unitWidth * 2.0 + lGap * 1.0   // 2.0 units
 
         VStack(alignment: .leading, spacing: lRowSpacing) {
             // Row 0: ` 1-0 - = ⌫
             KeyboardRow(keys: buildLandscapeRow0(shifted: isShifted), unitWidth: unitWidth, keyHeight: lKeyHeight, gap: lGap, onTap: handle)
             // Row 1: ⇥ QWERTYUIOP [ ] backslash
             KeyboardRow(keys: buildLandscapeRow1(shifted: isShifted), unitWidth: unitWidth, keyHeight: lKeyHeight, gap: lGap, onTap: handle)
-            // Row 2: ☰ ASDFGHJKL ; ' ↵
-            KeyboardRow(keys: buildLandscapeRow2(shifted: isShifted), unitWidth: unitWidth, keyHeight: lKeyHeight, gap: lGap, onTap: handle)
+            // Row 2: caps ASDFGHJKL ; ' ↵
+            HStack(spacing: lGap) {
+                ShiftKeyCap(
+                    shiftState: shiftState,
+                    width: capsLockWidth,
+                    height: lKeyHeight,
+                    label: "caps",
+                    onPressDown: handleShiftPressDown,
+                    onTap: handleShiftTap,
+                    onLongPressBegin: handleShiftLongPressBegin,
+                    onLongPressEnd: handleShiftLongPressEnd
+                )
+                KeyboardRow(keys: buildLandscapeRow2Body(shifted: isShifted), unitWidth: unitWidth, keyHeight: lKeyHeight, gap: lGap, onTap: handle)
+            }
             // Row 3: ⇧ ZXCVBNM , . / ⇧
             HStack(spacing: lGap) {
                 ShiftKeyCap(

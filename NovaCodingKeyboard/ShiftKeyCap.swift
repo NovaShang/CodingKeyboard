@@ -12,10 +12,27 @@ struct ShiftKeyCap: View {
     let shiftState: ShiftState
     let width: CGFloat
     let height: CGFloat
+    let customLabel: String?
     let onPressDown: @MainActor () -> Void
     let onTap: @MainActor () -> Void
     let onLongPressBegin: @MainActor () -> Void
     let onLongPressEnd: @MainActor () -> Void
+
+    init(shiftState: ShiftState, width: CGFloat, height: CGFloat,
+         label: String? = nil,
+         onPressDown: @escaping @MainActor () -> Void,
+         onTap: @escaping @MainActor () -> Void,
+         onLongPressBegin: @escaping @MainActor () -> Void,
+         onLongPressEnd: @escaping @MainActor () -> Void) {
+        self.shiftState = shiftState
+        self.width = width
+        self.height = height
+        self.customLabel = label
+        self.onPressDown = onPressDown
+        self.onTap = onTap
+        self.onLongPressBegin = onLongPressBegin
+        self.onLongPressEnd = onLongPressEnd
+    }
 
     @State private var isPressed = false
     @State private var longPressTask: Task<Void, Never>? = nil
@@ -24,7 +41,8 @@ struct ShiftKeyCap: View {
     private let longPressThreshold: TimeInterval = 0.15
 
     private var label: String {
-        shiftState == .locked ? "⇪" : "⇧"
+        if let customLabel { return customLabel }
+        return shiftState == .locked ? "⇪" : "⇧"
     }
 
     private var backgroundColor: Color {
@@ -43,7 +61,9 @@ struct ShiftKeyCap: View {
             RoundedRectangle(cornerRadius: 8)
                 .fill(backgroundColor)
             Text(label)
-                .font(.system(size: 24, weight: .regular, design: .default))
+                .font(customLabel != nil
+                      ? .system(size: 13, weight: .medium)
+                      : .system(size: 24, weight: .regular))
                 .minimumScaleFactor(0.5)
                 .lineLimit(1)
                 .foregroundStyle(shiftState.isActive ? Color.white : Color.primary)
