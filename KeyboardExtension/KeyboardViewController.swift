@@ -52,6 +52,8 @@ class KeyboardViewController: UIInputViewController {
             break  // shift state is managed inside CodingKeyboardView
         case .dismiss:
             dismissKeyboard()
+        case .nextKeyboard:
+            advanceToNextInputMode()
         }
     }
 

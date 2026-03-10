@@ -16,10 +16,16 @@ struct KeyButton: View {
 
     var style: KeyCapStyle {
         switch key.action {
-        case .backspace, .enter, .shift, .tab, .cursorLeft, .cursorRight, .dismiss: return .modifier
+        case .backspace, .enter, .shift, .tab, .cursorLeft, .cursorRight, .dismiss, .nextKeyboard: return .modifier
         case .space:                     return .space
         default:                         return .normal
         }
+    }
+
+    var rowSpacing: CGFloat = 0
+
+    private var hitInsets: EdgeInsets {
+        EdgeInsets(top: rowSpacing / 2, leading: gap / 2, bottom: rowSpacing / 2, trailing: gap / 2)
     }
 
     var body: some View {
@@ -31,7 +37,8 @@ struct KeyButton: View {
             action: { onTap(key.action) },
             normalLabel: key.normalLabel,
             shiftedLabel: key.shiftedLabel,
-            isShifted: key.isShifted
+            isShifted: key.isShifted,
+            hitPadding: hitInsets
         )
     }
 }
@@ -44,16 +51,18 @@ struct KeyboardRow: View {
     let keyHeight: CGFloat
     let gap: CGFloat
     let onTap: @MainActor (KeyAction) -> Void
+    var rowSpacing: CGFloat = 0
 
     var body: some View {
-        HStack(spacing: gap) {
+        HStack(spacing: 0) {
             ForEach(keys.indices, id: \.self) { i in
                 KeyButton(
                     key: keys[i],
                     unitWidth: unitWidth,
                     keyHeight: keyHeight,
                     gap: gap,
-                    onTap: onTap
+                    onTap: onTap,
+                    rowSpacing: rowSpacing
                 )
             }
         }

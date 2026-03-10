@@ -89,13 +89,14 @@ func buildRow4Body(shifted: Bool) -> [KeyDef] {
     return r
 }
 
-// Row 5: \ / `(1.0) ␣(3.0) , . ↵(2.0) — 2+1+3+2+2 = 10 units
-func buildRow5(shifted: Bool) -> [KeyDef] {
+// Row 5: 🌐(1) + body(9)  — 10 units total
+// The globe key is rendered separately as a native UIKit button.
+func buildRow5Body(shifted: Bool) -> [KeyDef] {
     var r = [KeyDef]()
     r.append(.shiftable("\\", "|", isShifted: shifted))
     r.append(.shiftable("/", "?", isShifted: shifted))
     r.append(.shiftable("`", "~", isShifted: shifted))
-    r.append(KeyDef(label: "␣", action: .space, units: 3.0))
+    r.append(KeyDef(label: "␣", action: .space, units: 2.0))
     r.append(.shiftable(",", "<", isShifted: shifted))
     r.append(.shiftable(".", ">", isShifted: shifted))
     r.append(KeyDef(label: "↵", action: .enter, units: 2.0))
@@ -182,11 +183,12 @@ func buildLandscapeRow3Body(shifted: Bool) -> [KeyDef] {
     return r
 }
 
-// Landscape Row 4: ↓(1.5) ␣(11.5) ↓(1.5) — 14.5 units
-func buildLandscapeRow4(shifted: Bool) -> [KeyDef] {
+// Landscape Row 4: 🌐(1.5) ↓(1.5) ␣(10) ↓(1.5) — 14.5 units
+// The globe key is rendered separately as a native UIKit button.
+func buildLandscapeRow4Body(shifted: Bool) -> [KeyDef] {
     var r = [KeyDef]()
     r.append(KeyDef(label: "↓", action: .dismiss, units: 1.5))
-    r.append(KeyDef(label: "␣", action: .space, units: 11.5))
+    r.append(KeyDef(label: "␣", action: .space, units: 10.0))
     r.append(KeyDef(label: "↓", action: .dismiss, units: 1.5))
     return r
 }

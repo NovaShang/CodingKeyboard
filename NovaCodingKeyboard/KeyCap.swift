@@ -22,6 +22,8 @@ struct KeyCap: View {
     let normalLabel: String?
     let shiftedLabel: String?
     let isShifted: Bool
+    /// Extra padding around the visual key that extends the hit area.
+    let hitPadding: EdgeInsets
 
     // Key repeat timing (matches system keyboard feel)
     private let repeatDelay: TimeInterval = 0.4
@@ -39,7 +41,8 @@ struct KeyCap: View {
         action: @MainActor @escaping () -> Void,
         normalLabel: String? = nil,
         shiftedLabel: String? = nil,
-        isShifted: Bool = false
+        isShifted: Bool = false,
+        hitPadding: EdgeInsets = .init()
     ) {
         self.label = label
         self.style = style
@@ -49,6 +52,7 @@ struct KeyCap: View {
         self.normalLabel = normalLabel
         self.shiftedLabel = shiftedLabel
         self.isShifted = isShifted
+        self.hitPadding = hitPadding
     }
 
     var body: some View {
@@ -58,9 +62,11 @@ struct KeyCap: View {
             keyContent
         }
         .frame(width: width, height: height)
-        .onAppear { feedbackGenerator.prepare() }
         .scaleEffect(isPressed ? 0.94 : 1.0)
         .animation(.easeInOut(duration: 0.08), value: isPressed)
+        .padding(hitPadding)
+        .contentShape(Rectangle())
+        .onAppear { feedbackGenerator.prepare() }
         .gesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { _ in
@@ -128,6 +134,12 @@ struct KeyCap: View {
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
+        } else if label.hasPrefix("sf:") {
+            // SF Symbol icon (e.g. "sf:globe")
+            Image(systemName: String(label.dropFirst(3)))
+                .font(.system(size: 20, weight: .regular))
+                .foregroundStyle(Color.primary)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             // Single-label layout for letters, modifiers, space etc.
             Text(label)
@@ -148,11 +160,10 @@ struct KeyCap: View {
     private var backgroundColor: Color {
         switch style {
         case .normal, .space:
-            // Light: near-white; Dark: mid-gray — matches system keyboard normal key
             return Color(
                 UIColor(dynamicProvider: { t in
                     t.userInterfaceStyle == .dark
-                        ? UIColor(white: 0.32, alpha: 1)
+                        ? UIColor(white: 0.40, alpha: 1)
                         : UIColor(white: 1.0, alpha: 1)
                 })
             )
@@ -160,8 +171,8 @@ struct KeyCap: View {
             return Color(
                 UIColor(dynamicProvider: { t in
                     t.userInterfaceStyle == .dark
-                        ? UIColor(white: 0.20, alpha: 1)
-                        : UIColor(white: 0.88, alpha: 1)
+                        ? UIColor(white: 0.25, alpha: 1)
+                        : UIColor(white: 0.80, alpha: 1)
                 })
             )
         }

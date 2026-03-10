@@ -24,6 +24,7 @@ enum KeyAction {
     case cursorLeft
     case cursorRight
     case dismiss
+    case nextKeyboard
 }
 
 // MARK: - KeyDef

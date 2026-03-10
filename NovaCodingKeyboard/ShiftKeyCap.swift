@@ -49,9 +49,9 @@ struct ShiftKeyCap: View {
         let active = shiftState.isActive
         return Color(UIColor(dynamicProvider: { t in
             if t.userInterfaceStyle == .dark {
-                return active ? UIColor(white: 0.55, alpha: 1) : UIColor(white: 0.38, alpha: 1)
+                return active ? UIColor(white: 0.55, alpha: 1) : UIColor(white: 0.25, alpha: 1)
             } else {
-                return active ? UIColor(white: 0.50, alpha: 1) : UIColor(white: 0.72, alpha: 1)
+                return active ? UIColor(white: 0.50, alpha: 1) : UIColor(white: 0.80, alpha: 1)
             }
         }))
     }
