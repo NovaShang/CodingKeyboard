@@ -183,12 +183,14 @@ func buildLandscapeRow3Body(shifted: Bool) -> [KeyDef] {
     return r
 }
 
-// Landscape Row 4: 🌐(1.5) ↓(1.5) ␣(10) ↓(1.5) — 14.5 units
+// Landscape Row 4: 🌐(1.5) ↓(1.5) ␣(8) ←(1) →(1) ↓(1.5) — 14.5 units
 // The globe key is rendered separately as a native UIKit button.
 func buildLandscapeRow4Body(shifted: Bool) -> [KeyDef] {
     var r = [KeyDef]()
     r.append(KeyDef(label: "↓", action: .dismiss, units: 1.5))
-    r.append(KeyDef(label: "␣", action: .space, units: 10.0))
+    r.append(KeyDef(label: "␣", action: .space, units: 8.0))
+    r.append(KeyDef(label: "←", action: .cursorLeft, units: 1.0))
+    r.append(KeyDef(label: "→", action: .cursorRight, units: 1.0))
     r.append(KeyDef(label: "↓", action: .dismiss, units: 1.5))
     return r
 }
