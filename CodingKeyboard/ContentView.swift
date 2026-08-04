@@ -1,25 +1,61 @@
 import SwiftUI
 
+/// The two things this app is for once the keyboard is enabled: somewhere to type, and
+/// somewhere to see what typing actually sent.
+private enum Pane: String, CaseIterable {
+    case scratch = "Scratch"
+    case terminal = "Terminal"
+}
+
 struct ContentView: View {
     @State private var typedText = ""
     @State private var showsBytes = false
+    @State private var pane: Pane = .scratch
     @FocusState private var isFocused: Bool
+
+    /// Compact height means a phone on its side, where the keyboard claims most of the
+    /// screen and every row of chrome above it is one fewer row of content.
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+
+    private var isShort: Bool { verticalSizeClass == .compact }
 
     var body: some View {
         VStack(spacing: 0) {
-            // Hint banner
-            HStack(spacing: 8) {
-                Image(systemName: "globe")
-                    .font(.body.weight(.semibold))
-                Text("Long-press  \(Image(systemName: "globe"))  on the keyboard to switch to **Coding Keyboard**")
-                    .font(.subheadline)
+            // Hint banner. Dropped in landscape on a phone: with the keyboard up there is
+            // barely a hundred points left, and a line of advice about how to summon the
+            // keyboard is worth least at the moment the keyboard is already up.
+            if !isShort {
+                HStack(spacing: 8) {
+                    Image(systemName: "globe")
+                        .font(.body.weight(.semibold))
+                    Text("Long-press  \(Image(systemName: "globe"))  on the keyboard to switch to **Coding Keyboard**")
+                        .font(.subheadline)
+                }
+                .foregroundStyle(.secondary)
+                .padding(.horizontal)
+                .padding(.vertical, 12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(.bar)
             }
-            .foregroundStyle(.secondary)
+
+            Picker("Pane", selection: $pane) {
+                ForEach(Pane.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+            }
+            .pickerStyle(.segmented)
             .padding(.horizontal)
-            .padding(.vertical, 12)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, isShort ? 6 : 0)
+            .padding(.bottom, isShort ? 4 : 8)
             .background(.bar)
 
+            switch pane {
+            case .scratch: scratch
+            case .terminal: EchoTerminal()
+            }
+        }
+    }
+
+    private var scratch: some View {
+        VStack(spacing: 0) {
             // Byte inspector. Collapsed by default — it is a checking tool, not part of
             // the scratch pad. Terminal mode's whole claim is that ⌃C produces the single
             // byte 0x03 and Return produces 0x0D, and a text field renders neither

@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		98000DDC2F54CDEA00E0BBF6 /* KeyboardExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 98000DD52F54CDEA00E0BBF6 /* KeyboardExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		98000F122F60000100E0BBF6 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = 98000F112F60000100E0BBF6 /* SwiftTerm */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -98,6 +99,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				98000F122F60000100E0BBF6 /* SwiftTerm in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -161,6 +163,7 @@
 			);
 			name = CodingKeyboard;
 			packageProductDependencies = (
+				98000F112F60000100E0BBF6 /* SwiftTerm */,
 			);
 			productName = CodingKeyboard;
 			productReference = 98000DB92F54A56800E0BBF6 /* CodingKeyboard.app */;
@@ -217,6 +220,9 @@
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 98000DBA2F54A56800E0BBF6 /* Products */;
+			packageReferences = (
+				98000F102F60000100E0BBF6 /* XCRemoteSwiftPackageReference "SwiftTerm" */,
+			);
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -569,6 +575,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		98000F102F60000100E0BBF6 /* XCRemoteSwiftPackageReference "SwiftTerm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/migueldeicaza/SwiftTerm";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.2.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		98000F112F60000100E0BBF6 /* SwiftTerm */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 98000F102F60000100E0BBF6 /* XCRemoteSwiftPackageReference "SwiftTerm" */;
+			productName = SwiftTerm;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 98000DB12F54A56800E0BBF6 /* Project object */;
 }
