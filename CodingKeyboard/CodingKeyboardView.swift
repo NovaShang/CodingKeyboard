@@ -13,34 +13,26 @@ struct CodingKeyboardView: View {
     /// than being left as a gap. Driven by `needsInputModeSwitchKey` in the host
     /// controller — never by a device-model check.
     var showsGlobeKey: Bool = true
-    /// Called whenever a key is tapped. The caller decides what to do with the action.
-    let onAction: @MainActor (KeyAction) -> Void
+    /// Called whenever a key is tapped. The caller decides what to do with the event.
+    let onAction: @MainActor (KeyEvent) -> Void
 
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
-    @State private var shiftState: ShiftState = .off
-    /// Timestamp of the last shift finger-lift, used to detect double-tap on the next press-down.
-    @State private var lastShiftReleaseTime: Date = .distantPast
-    /// Set to true when a double-tap is detected on press-down, so the following lift is ignored.
-    @State private var shiftPressWasDoubleTap = false
-    /// True while a finger is resting on a Shift key.
-    @State private var isShiftHeld = false
-    /// When the current Shift press began, used to tell a tap from a deliberate hold.
-    @State private var shiftPressTime: Date = .distantPast
-    /// Shift's state before the current press, used to resolve a tap into a toggle.
-    @State private var shiftStateBeforePress: ShiftState = .off
-    /// Whether any key was pressed while Shift was being held down.
-    @State private var didTypeWhileShiftHeld = false
+    // Shift, Control and Option all run the same latch. Control and Option are only on
+    // screen in terminal mode, but they are kept here unconditionally so that toggling
+    // the mode never strands a latch in the on state with no key left to turn it off.
+    @State private var shift = ModifierLatch()
+    @State private var control = ModifierLatch()
+    @State private var option = ModifierLatch()
 
-    private let shiftDoubleTapWindow: TimeInterval = 0.3
-    /// Above this, a press with nothing typed reads as an abandoned hold rather than a tap.
-    private let shiftHoldThreshold: TimeInterval = 0.5
+    /// Persisted in this process's own `UserDefaults` — see `TerminalMode.defaultsKey`
+    /// for why it is deliberately not an App Group.
+    @AppStorage(TerminalMode.defaultsKey) private var terminalMode = false
 
     // Portrait constants
     private let keyHeight: CGFloat = 44
     private let shortKeyHeight: CGFloat = 34
     private let gap: CGFloat = 6
-    private let totalCols: CGFloat = 10
     private let rowSpacing: CGFloat = 8
     /// Visible margin from the screen edge to the outermost key. Kept tight so the keys
     /// get the width instead; must stay >= gap/2, since the container padding is this
@@ -64,12 +56,12 @@ struct CodingKeyboardView: View {
     private var lKeyHeight: CGFloat { isVerticallyCompact ? 34 : 42 }
     private var lRowSpacing: CGFloat { isVerticallyCompact ? 5 : 7 }
 
-    private var isShifted: Bool { shiftState.isActive }
+    private var isShifted: Bool { shift.isActive }
 
-    // Handed to the keys that are not built by KeyboardRow — Shift and the globe — so
-    // their touch area matches a KeyCap's exactly. These two used to receive the same
-    // padding from the call site, but applied there it lands outside their gesture and
-    // the strip between keys goes dead.
+    // Handed to the keys that are not built by KeyboardRow — the modifier caps and the
+    // globe — so their touch area matches a KeyCap's exactly. These used to receive the
+    // same padding from the call site, but applied there it lands outside their gesture
+    // and the strip between keys goes dead.
     private var portraitHitInsets: EdgeInsets {
         EdgeInsets(top: rowSpacing / 2, leading: gap / 2, bottom: rowSpacing / 2, trailing: gap / 2)
     }
@@ -78,17 +70,33 @@ struct CodingKeyboardView: View {
         EdgeInsets(top: lRowSpacing / 2, leading: lGap / 2, bottom: lRowSpacing / 2, trailing: lGap / 2)
     }
 
+    /// The same width arithmetic `KeyButton` applies to a `KeyDef`, for the keys that are
+    /// rendered outside a `KeyboardRow` and so have to size themselves.
+    private func width(units: CGFloat, unit: CGFloat, gap: CGFloat) -> CGFloat {
+        unit * units + gap * (units - 1)
+    }
+
+    /// A gap the exact size of the key that would otherwise be there. Wider than `width`
+    /// by one gap, because a key's footprint in a row includes the hit padding it carries
+    /// on either side.
+    private func blankSlot(units: CGFloat, unit: CGFloat, gap: CGFloat, height: CGFloat) -> some View {
+        Color.clear.frame(width: width(units: units, unit: unit, gap: gap) + gap, height: height)
+    }
+
     // Both totals count one full rowSpacing *per row*, not per gap between rows: every
     // key carries rowSpacing/2 of hit padding above and below it, so a row occupies its
     // key height plus a whole rowSpacing. Counting gaps instead left the declared height
     // short of the content, which squeezes the bottom row.
 
-    /// Portrait: 4 full-height rows (QWERTY, ASDF, ZXCV, bottom) + 2 short rows + top inset.
+    /// Portrait: 4 full-height rows (QWERTY, ASDF, ZXCV, bottom) + 2 short rows + top
+    /// inset — 300pt. Terminal mode scrolls Row 0 rather than adding a row, so this is
+    /// the height in both modes.
     private var portraitHeight: CGFloat {
         keyHeight * 4 + shortKeyHeight * 2 + rowSpacing * 6 + 8
     }
 
-    /// Landscape: 5 rows + top inset.
+    /// Landscape: 5 rows + top inset. Terminal mode pays for its extra keys within the
+    /// rows it already has, so the keyboard is the same height in both modes.
     private var landscapeHeight: CGFloat {
         lKeyHeight * 5 + lRowSpacing * 5 + 6
     }
@@ -123,12 +131,12 @@ struct CodingKeyboardView: View {
     @ViewBuilder
     private func portraitBody(geo: GeometryProxy) -> some View {
         let totalWidth = geo.size.width - sidePadding * 2
-        let unitWidth = (totalWidth - (totalCols - 1) * gap) / totalCols
+        let unitWidth = (totalWidth - (portraitTotalCols - 1) * gap) / portraitTotalCols
         let halfUnit = (unitWidth + gap) / 2
-        let shiftKeyWidth = unitWidth * 1.5 + gap * 0.5
+        let shiftKeyWidth = width(units: 1.5, unit: unitWidth, gap: gap)
 
         VStack(alignment: .leading, spacing: 0) {
-            KeyboardRow(keys: buildRow0(shifted: isShifted), unitWidth: unitWidth, keyHeight: shortKeyHeight, gap: gap, onTap: handle, rowSpacing: rowSpacing)
+            portraitRow0(unitWidth: unitWidth)
             KeyboardRow(keys: buildRow1(shifted: isShifted), unitWidth: unitWidth, keyHeight: shortKeyHeight, gap: gap, onTap: handle, rowSpacing: rowSpacing)
             KeyboardRow(keys: buildRow2(shifted: isShifted), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle, rowSpacing: rowSpacing)
             // No .padding here: the half-key inset is handed to A and L as hit area
@@ -136,12 +144,12 @@ struct CodingKeyboardView: View {
             KeyboardRow(keys: buildRow3(shifted: isShifted), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle, rowSpacing: rowSpacing, edgeHitPadding: halfUnit)
             HStack(spacing: 0) {
                 ShiftKeyCap(
-                    shiftState: shiftState,
+                    shiftState: shift.state,
                     width: shiftKeyWidth,
                     height: keyHeight,
                     hitPadding: portraitHitInsets,
-                    onPressDown: handleShiftPressDown,
-                    onRelease: handleShiftRelease
+                    onPressDown: { play(shift.pressDown()) },
+                    onRelease: { play(shift.release()); onAction(event(.shift)) }
                 )
                 KeyboardRow(keys: buildRow4Body(shifted: isShifted), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle, rowSpacing: rowSpacing)
             }
@@ -149,8 +157,51 @@ struct CodingKeyboardView: View {
                 if showsGlobeKey {
                     GlobeKeyButton(width: unitWidth, height: keyHeight, hitPadding: portraitHitInsets)
                 }
-                // Without the globe key the row is one unit short; it goes to the space bar.
-                KeyboardRow(keys: buildRow5Body(shifted: isShifted, spaceUnits: showsGlobeKey ? 2.0 : 3.0), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle, rowSpacing: rowSpacing)
+                // Same Ctrl / Term / Opt order as landscape, on the three slots `\`, `/`
+                // and `` ` `` gave up when they moved to the scrolling row above.
+                if terminalMode {
+                    ShiftKeyCap(
+                        shiftState: control.state,
+                        width: unitWidth,
+                        height: keyHeight,
+                        label: "Ctrl",
+                        accessibilityName: "Control",
+                        hitPadding: portraitHitInsets,
+                        onPressDown: { play(control.pressDown()) },
+                        onRelease: { play(control.release()); onAction(event(.control)) }
+                    )
+                } else {
+                    // Control's slot, filled by the hide key rather than held open: normal
+                    // mode has no Control to put here, and hide has no row of its own to
+                    // go back to. Term still keeps its column in both modes, which is the
+                    // only thing the slot was ever reserved for.
+                    KeyButton(key: hideKey(), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: { handle($0) }, rowSpacing: rowSpacing)
+                }
+                ShiftKeyCap(
+                    shiftState: terminalMode ? .locked : .off,
+                    width: unitWidth,
+                    height: keyHeight,
+                    label: "Term",
+                    accessibilityName: "Terminal mode",
+                    hitPadding: portraitHitInsets,
+                    onPressDown: { handle(.toggleTerminalMode) },
+                    onRelease: {}
+                )
+                if terminalMode {
+                    ShiftKeyCap(
+                        shiftState: option.state,
+                        width: unitWidth,
+                        height: keyHeight,
+                        label: "Opt",
+                        accessibilityName: "Option",
+                        hitPadding: portraitHitInsets,
+                        onPressDown: { play(option.pressDown()) },
+                        onRelease: { play(option.release()); onAction(event(.option)) }
+                    )
+                }
+                // Whatever the keys to the left of the space bar do not use goes to the
+                // space bar, so the row always totals 10 units.
+                KeyboardRow(keys: buildRow5Body(shifted: isShifted, spaceUnits: portraitSpaceUnits), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle, rowSpacing: rowSpacing)
             }
         }
         .padding(.top, 8)
@@ -161,61 +212,152 @@ struct CodingKeyboardView: View {
         .padding(.horizontal, sidePadding - gap / 2)
     }
 
+    /// Row 0 is the only portrait row whose contents outgrow the ten columns. It scrolls
+    /// sideways rather than spilling into a row of its own, so that both modes keep the
+    /// same six rows on the same grid and the keyboard does not change height when the
+    /// mode is toggled. Nothing is pinned: the mode switch is the `Term` key on the bottom
+    /// row, which is on screen in both modes, so no key here has to stay reachable.
+    @ViewBuilder
+    private func portraitRow0(unitWidth: CGFloat) -> some View {
+        if terminalMode {
+            ScrollView(.horizontal) {
+                KeyboardRow(keys: buildRow0Body(shifted: isShifted, terminal: true), unitWidth: unitWidth, keyHeight: shortKeyHeight, gap: gap, onTap: handle, rowSpacing: rowSpacing, scrollSafe: true)
+            }
+            .scrollIndicators(.hidden)
+            .scrollBounceBehavior(.basedOnSize)
+        } else {
+            // Normal mode fits on one screen once squeezed, so it stays an ordinary row —
+            // scrolling it would cost every key its press-down firing for nothing.
+            KeyboardRow(keys: buildRow0Body(shifted: isShifted), unitWidth: unitWidth, keyHeight: shortKeyHeight, gap: gap, onTap: handle, rowSpacing: rowSpacing)
+        }
+    }
+
+    /// Bottom row: 🌐(1) [·|Ctrl](1) Term(1) [Opt(1)] then the body. Only Option's slot
+    /// comes and goes — Control's is held open — so the space bar is the single unit wider
+    /// in normal mode.
+    private var portraitSpaceUnits: CGFloat {
+        let base: CGFloat = terminalMode ? 2.5 : 3.5
+        return showsGlobeKey ? base : base + 1.0
+    }
+
     // MARK: - Landscape Layout (Mac-like, 5 rows)
 
     @ViewBuilder
     private func landscapeBody(geo: GeometryProxy) -> some View {
         let totalWidth = geo.size.width - lSidePadding * 2
         let unitWidth = (totalWidth - (landscapeTotalCols - 1) * lGap) / landscapeTotalCols
-        let shiftKeyWidth = unitWidth * 2.25 + lGap * 1.25  // 2.25 units
-        let capsLockWidth = unitWidth * 2.0 + lGap * 1.0   // 2.0 units
+        // See the note on `landscapeTotalCols`: terminal mode pays for its extra keys out
+        // of the row they land on, never out of the grid.
+        let shiftKeyWidth = width(units: 2.25, unit: unitWidth, gap: lGap)
+        // The right Shift alone shrinks, handing its unit to the ↑ beside it.
+        let rightShiftWidth = width(units: terminalMode ? 1.25 : 2.25, unit: unitWidth, gap: lGap)
+        let capsLockWidth = width(units: 2.0, unit: unitWidth, gap: lGap)
+        let bottomModifierWidth = width(units: 1.5, unit: unitWidth, gap: lGap)
+        // Globe and Option are the narrow pair on the bottom row: one is a single glyph
+        // and the other a three-letter label, and neither needs the width Ctrl and Term do.
+        let narrowModifierWidth = width(units: 1.0, unit: unitWidth, gap: lGap)
 
         VStack(alignment: .leading, spacing: 0) {
-            // Row 0: ` 1-0 - = ⌫
-            KeyboardRow(keys: buildLandscapeRow0(shifted: isShifted), unitWidth: unitWidth, keyHeight: lKeyHeight, gap: lGap, onTap: handle, rowSpacing: lRowSpacing)
+            // Row 0: ` 1-0 - = ⌫, which fits exactly — plus, in terminal mode, Esc ahead
+            // of it and the navigation and function keys behind, which do not. It scrolls
+            // only in the mode that overflows: made to scroll unconditionally, the number
+            // keys would give up firing on press-down for nothing (see `KeyCap.scrollSafe`).
+            if terminalMode {
+                ScrollView(.horizontal) {
+                    KeyboardRow(keys: buildLandscapeRow0(shifted: isShifted, terminal: true), unitWidth: unitWidth, keyHeight: lKeyHeight, gap: lGap, onTap: handle, rowSpacing: lRowSpacing, scrollSafe: true)
+                }
+                .scrollIndicators(.hidden)
+                .scrollBounceBehavior(.basedOnSize)
+            } else {
+                KeyboardRow(keys: buildLandscapeRow0(shifted: isShifted), unitWidth: unitWidth, keyHeight: lKeyHeight, gap: lGap, onTap: handle, rowSpacing: lRowSpacing)
+            }
             // Row 1: ⇥ QWERTYUIOP [ ] backslash
             KeyboardRow(keys: buildLandscapeRow1(shifted: isShifted), unitWidth: unitWidth, keyHeight: lKeyHeight, gap: lGap, onTap: handle, rowSpacing: lRowSpacing)
             // Row 2: caps ASDFGHJKL ; ' ↵
             HStack(spacing: 0) {
                 ShiftKeyCap(
-                    shiftState: shiftState,
+                    shiftState: shift.state,
                     width: capsLockWidth,
                     height: lKeyHeight,
-                    label: "caps",
+                    label: "Caps",
+                    accessibilityName: "Caps lock",
                     hitPadding: landscapeHitInsets,
-                    onPressDown: handleShiftPressDown,
-                    onRelease: handleShiftRelease
+                    onPressDown: { play(shift.pressDown()) },
+                    onRelease: { play(shift.release()); onAction(event(.shift)) }
                 )
                 KeyboardRow(keys: buildLandscapeRow2Body(shifted: isShifted), unitWidth: unitWidth, keyHeight: lKeyHeight, gap: lGap, onTap: handle, rowSpacing: lRowSpacing)
             }
-            // Row 3: ⇧ ZXCVBNM , . / ⇧
+            // Row 3: ⇧ ZXCVBNM , . / [↑] ⇧
             HStack(spacing: 0) {
                 ShiftKeyCap(
-                    shiftState: shiftState,
+                    shiftState: shift.state,
                     width: shiftKeyWidth,
                     height: lKeyHeight,
                     hitPadding: landscapeHitInsets,
-                    onPressDown: handleShiftPressDown,
-                    onRelease: handleShiftRelease
+                    onPressDown: { play(shift.pressDown()) },
+                    onRelease: { play(shift.release()); onAction(event(.shift)) }
                 )
-                KeyboardRow(keys: buildLandscapeRow3Body(shifted: isShifted), unitWidth: unitWidth, keyHeight: lKeyHeight, gap: lGap, onTap: handle, rowSpacing: lRowSpacing)
+                KeyboardRow(keys: buildLandscapeRow3Body(shifted: isShifted, terminal: terminalMode), unitWidth: unitWidth, keyHeight: lKeyHeight, gap: lGap, onTap: handle, rowSpacing: lRowSpacing)
                 ShiftKeyCap(
-                    shiftState: shiftState,
-                    width: shiftKeyWidth,
+                    shiftState: shift.state,
+                    width: rightShiftWidth,
                     height: lKeyHeight,
                     hitPadding: landscapeHitInsets,
-                    onPressDown: handleShiftPressDown,
-                    onRelease: handleShiftRelease
+                    onPressDown: { play(shift.pressDown()) },
+                    onRelease: { play(shift.release()); onAction(event(.shift)) }
                 )
             }
-            // Row 4: 🌐 ↓ ␣ ↓
+            // Row 4: 🌐 term [ctrl opt] ␣ cursor keys hide
             HStack(spacing: 0) {
                 if showsGlobeKey {
-                    let globeWidth = unitWidth * 1.5 + lGap * 0.5
-                    GlobeKeyButton(width: globeWidth, height: lKeyHeight, hitPadding: landscapeHitInsets)
+                    GlobeKeyButton(width: narrowModifierWidth, height: lKeyHeight, hitPadding: landscapeHitInsets, symbolPointSize: 17)
                 }
-                // Without the globe key the row is 1.5 units short; they go to the space bar.
-                KeyboardRow(keys: buildLandscapeRow4Body(shifted: isShifted, spaceUnits: showsGlobeKey ? 8.0 : 9.5), unitWidth: unitWidth, keyHeight: lKeyHeight, gap: lGap, onTap: handle, rowSpacing: lRowSpacing)
+                if terminalMode {
+                    ShiftKeyCap(
+                        shiftState: control.state,
+                        width: bottomModifierWidth,
+                        height: lKeyHeight,
+                        label: "Ctrl",
+                        accessibilityName: "Control",
+                        hitPadding: landscapeHitInsets,
+                        onPressDown: { play(control.pressDown()) },
+                        onRelease: { play(control.release()); onAction(event(.control)) }
+                    )
+                } else {
+                    // Control's slot, held open. Term sits between Control and Option in
+                    // both modes, and closing this gap when the mode is off would slide
+                    // Term a key and a half to the left every time it was toggled — the
+                    // one key guaranteed to be pressed again next is the worst one to move.
+                    blankSlot(units: 1.5, unit: unitWidth, gap: lGap, height: lKeyHeight)
+                }
+                // Highlighted like a locked Shift when the mode is on, which is the only
+                // thing marking terminal mode in landscape — the layout change is too
+                // subtle on its own.
+                ShiftKeyCap(
+                    shiftState: terminalMode ? .locked : .off,
+                    width: bottomModifierWidth,
+                    height: lKeyHeight,
+                    label: "Term",
+                    accessibilityName: "Terminal mode",
+                    hitPadding: landscapeHitInsets,
+                    onPressDown: { handle(.toggleTerminalMode) },
+                    onRelease: {}
+                )
+                if terminalMode {
+                    ShiftKeyCap(
+                        shiftState: option.state,
+                        width: narrowModifierWidth,
+                        height: lKeyHeight,
+                        label: "Opt",
+                        accessibilityName: "Option",
+                        hitPadding: landscapeHitInsets,
+                        onPressDown: { play(option.pressDown()) },
+                        onRelease: { play(option.release()); onAction(event(.option)) }
+                    )
+                }
+                // Nothing holds Option's slot open: everything to the right of Term is
+                // the space bar, which simply grows into it.
+                KeyboardRow(keys: buildLandscapeRow4Body(shifted: isShifted, spaceUnits: landscapeSpaceUnits, terminal: terminalMode), unitWidth: unitWidth, keyHeight: lKeyHeight, gap: lGap, onTap: handle, rowSpacing: lRowSpacing)
             }
         }
         .padding(.top, 6)
@@ -223,76 +365,69 @@ struct CodingKeyboardView: View {
         .padding(.horizontal, lSidePadding - lGap / 2)
     }
 
-    // MARK: - Shift gesture handlers
+    /// Bottom row: 🌐(1.5) term(1.5) [ctrl(1.5) opt(1.5)] then the body. Terminal mode
+    /// spends four extra units on modifiers and cursor keys against one extra column.
+    private var landscapeSpaceUnits: CGFloat {
+        // 4.75, not the 5.0 that would fill the row, and that quarter unit is the whole
+        // point: it is what puts ← at column 11.25 and so ↓ at 12.25, directly under the ↑
+        // that Row 3 lands at 12.25. Row 3 fixes that column — ⇧(2.25) + ZXCVBNM + `,./`
+        // — and cannot be adjusted to meet Row 4 instead, because widening the left Shift
+        // would carry the whole letter block sideways with it.
+        //
+        // The quarter unit comes off the end of the row rather than out of a key: with ↓
+        // pinned at 12.25 and every arrow a square 1.0, → ends at 14.25 and the last
+        // quarter of the row is simply empty. Spending it on a wider → would close the gap
+        // at the cost of the cluster no longer being three keys of the same size.
+        //
+        // Normal mode has no ↑ to line up with, so it fills its row exactly.
+        let base: CGFloat = terminalMode ? 4.75 : 7.0
+        return showsGlobeKey ? base : base + 1.0
+    }
 
-    // Shift takes effect the moment the finger lands, never on lift and never after a
-    // delay, so holding Shift with one thumb and typing with the other capitalizes from
-    // the very first keystroke. What the press *meant* is resolved on release instead.
-    private func handleShiftPressDown() {
-        let timeSinceRelease = Date().timeIntervalSince(lastShiftReleaseTime)
-        shiftStateBeforePress = shiftState
-        shiftPressTime = Date()
-        didTypeWhileShiftHeld = false
-        isShiftHeld = true
+    // MARK: - Modifier plumbing
 
-        if timeSinceRelease < shiftDoubleTapWindow && shiftState == .on {
-            // Second tap quickly after the first → lock
-            shiftState = .locked
-            shiftPressWasDoubleTap = true
-            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-            return
-        }
-        shiftPressWasDoubleTap = false
-        if shiftState == .off {
-            shiftState = .momentary
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+    /// Haptics live here rather than in `ModifierLatch` so the latch stays pure logic.
+    /// They are a no-op inside the extension anyway — see the note in `KeyCap`.
+    private func play(_ feedback: ModifierLatch.Feedback?) {
+        switch feedback {
+        case .light:  UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        case .medium: UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        case nil:     break
         }
     }
 
-    private func handleShiftRelease() {
-        defer {
-            lastShiftReleaseTime = Date()
-            isShiftHeld = false
-        }
-        // The lock was already applied on press-down; leave it alone.
-        if shiftPressWasDoubleTap {
-            shiftPressWasDoubleTap = false
-            return
-        }
-        // Used as a held modifier — the capitals are already typed, so drop it.
-        if didTypeWhileShiftHeld {
-            shiftState = .off
-            return
-        }
-        // Held deliberately but never used: treat as cancelled rather than leaving Shift
-        // armed for a character the user never meant to capitalize.
-        if Date().timeIntervalSince(shiftPressTime) >= shiftHoldThreshold {
-            shiftState = .off
-            return
-        }
-        // A plain tap: toggle relative to whatever Shift was before this press.
-        switch shiftStateBeforePress {
-        case .off:
-            shiftState = .on
-        case .on, .locked, .momentary:
-            shiftState = .off
-        }
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        onAction(.shift)
+    private var activeModifiers: KeyModifiers {
+        var modifiers = KeyModifiers()
+        if shift.isActive { modifiers.insert(.shift) }
+        if control.isActive { modifiers.insert(.control) }
+        if option.isActive { modifiers.insert(.option) }
+        return modifiers
+    }
+
+    private func event(_ action: KeyAction) -> KeyEvent {
+        KeyEvent(action: action, modifiers: activeModifiers, isTerminalMode: terminalMode)
     }
 
     // MARK: - General key handler
 
     private func handle(_ action: KeyAction) {
-        if case .shift = action { return }  // shift handled separately
-        if isShiftHeld {
-            didTypeWhileShiftHeld = true
+        switch action {
+        case .shift, .control, .option:
+            // Owned by the latches, which report press and release directly.
+            return
+        case .toggleTerminalMode:
+            terminalMode.toggle()
+            return
+        default:
+            break
         }
-        // .on resets after one character; .momentary and .locked persist
-        if shiftState == .on {
-            shiftState = .off
-        }
-        onAction(action)
+        // Snapshot before the one-shot latches are spent: ⌃ has to travel with the C it
+        // was pressed for, not with whatever comes after.
+        let pressed = event(action)
+        shift.noteKeyPress()
+        control.noteKeyPress()
+        option.noteKeyPress()
+        onAction(pressed)
     }
 }
 

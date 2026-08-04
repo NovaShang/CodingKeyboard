@@ -42,6 +42,21 @@ struct KeyCap: View {
     /// Spoken description for VoiceOver. The visible label is often a bare symbol
     /// (⌫, ↵, ⇥) that does not read usefully on its own.
     let voiceOverLabel: String?
+    /// Fired instead of `action` when the key is held past the long-press threshold.
+    ///
+    /// A key that has one gives up this keyboard's usual fire-on-press-down behaviour and
+    /// sends its primary action on finger-*up* instead — otherwise holding ⇥ to switch
+    /// modes would also type the tab you were holding it to avoid. The trade is only
+    /// worth making for keys nobody types at speed.
+    let onLongPress: (@MainActor () -> Void)?
+    /// Set for keys that live inside a horizontally scrolling row, which are driven by a
+    /// `Button` rather than by this keyboard's usual drag gesture — see `keyBody`.
+    ///
+    /// Such a key cannot commit on finger-down the way the rest of the keyboard does: the
+    /// same touch may still turn out to be a scroll, and firing first would mean every
+    /// attempt to scroll the row typed a character. It types on the lift instead, and the
+    /// scroll view drops the press outright once the finger starts panning.
+    var scrollSafe: Bool = false
 
     // Key repeat timing (matches system keyboard feel)
     private let repeatDelay: TimeInterval = 0.4
@@ -49,6 +64,13 @@ struct KeyCap: View {
 
     @State private var isPressed = false
     @State private var repeatTask: Task<Void, Never>? = nil
+    @State private var longPressTask: Task<Void, Never>? = nil
+    /// Set once the hold threshold fires, so the following lift does not also type.
+    @State private var didLongPress = false
+    /// Set when a scroll-safe press has already produced output before the finger came
+    /// up, so the lift does not add one more. Only scroll-safe keys need it: everywhere
+    /// else the press-down always types and the lift never does.
+    @State private var didTypeDuringPress = false
     // NOTE: haptics are a no-op inside the keyboard extension. iOS only lets a
     // keyboard play haptic feedback when the user grants "Allow Full Access", and
     // this keyboard deliberately declares RequestsOpenAccess = false so it can
@@ -68,7 +90,9 @@ struct KeyCap: View {
         isShifted: Bool = false,
         hitPadding: EdgeInsets = .init(),
         repeatsOnHold: Bool = false,
-        voiceOverLabel: String? = nil
+        voiceOverLabel: String? = nil,
+        onLongPress: (@MainActor () -> Void)? = nil,
+        scrollSafe: Bool = false
     ) {
         self.label = label
         self.style = style
@@ -81,10 +105,22 @@ struct KeyCap: View {
         self.hitPadding = hitPadding
         self.repeatsOnHold = repeatsOnHold
         self.voiceOverLabel = voiceOverLabel
+        self.onLongPress = onLongPress
+        self.scrollSafe = scrollSafe
     }
 
     var body: some View {
-        ZStack {
+        keyBody
+            // Collapse the dual-label keys into a single spoken element; otherwise
+            // VoiceOver reads both the normal and the shifted character.
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(voiceOverLabel ?? label)
+            .accessibilityAddTraits(.isKeyboardKey)
+    }
+
+    @ViewBuilder
+    private var keyBody: some View {
+        let cap = ZStack {
             RoundedRectangle(cornerRadius: 8)
                 .fill(backgroundColor)
             keyContent
@@ -99,37 +135,142 @@ struct KeyCap: View {
         .background(keyHitFill)
         .contentShape(Rectangle())
         .onAppear { feedbackGenerator.prepare() }
-        .gesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in
-                    guard !isPressed else { return }
-                    isPressed = true
+
+        if scrollSafe {
+            // A Button, not a gesture. This is the whole reason a key can live inside a
+            // scrolling row: a scroll view knows how to cancel a button press once the
+            // finger turns out to be panning, and it cannot do that to a DragGesture —
+            // one attached to a key claims the touch and the row simply will not scroll,
+            // with or without `simultaneousGesture`. The cost is that these keys type on
+            // the lift rather than on the press, which is exactly what makes them safe.
+            Button {
+                // A press that already typed on the way down has done its work; one that
+                // resolved as a long press did something else entirely.
+                if !didTypeDuringPress && !didLongPress { action() }
+                didLongPress = false
+            } label: {
+                cap
+            }
+            .buttonStyle(PressReportingStyle(onPressChange: pressChanged))
+        } else {
+            cap.gesture(pressGesture)
+        }
+    }
+
+    /// Mirrors a `Button`'s own press tracking into the state the key already draws from,
+    /// so a scroll-safe key looks and repeats exactly like every other key.
+    private struct PressReportingStyle: ButtonStyle {
+        let onPressChange: (Bool) -> Void
+
+        func makeBody(configuration: Configuration) -> some View {
+            configuration.label
+                .onChange(of: configuration.isPressed) { _, pressed in
+                    onPressChange(pressed)
+                }
+        }
+    }
+
+    private func pressChanged(_ pressed: Bool) {
+        guard pressed else {
+            isPressed = false
+            repeatTask?.cancel()
+            repeatTask = nil
+            longPressTask?.cancel()
+            longPressTask = nil
+            return
+        }
+        isPressed = true
+        // Cleared on the way down rather than on the way up: the button's action runs
+        // after the press ends and has to see what *this* press already did.
+        didTypeDuringPress = false
+        feedbackGenerator.impactOccurred()
+
+        if let onLongPress {
+            didLongPress = false
+            longPressTask = Task {
+                try? await Task.sleep(for: .seconds(ModifierLatch.holdThreshold))
+                await MainActor.run {
+                    guard !Task.isCancelled else { return }
+                    didLongPress = true
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    onLongPress()
+                }
+            }
+            return
+        }
+
+        // Everything else in a scrolling row waits for the lift, but a repeating key has
+        // to answer on the way down: holding ← to run the cursor left is the entire point
+        // of it, and deferring would leave the cursor still until repeat kicked in half a
+        // second later. Doing it here is safe despite the scroll view — a press only
+        // registers at all once UIScrollView has held the touch back long enough to rule
+        // a pan out, and a pan starting after that cancels the press outright.
+        guard repeatsOnHold else { return }
+        didTypeDuringPress = true
+        action()
+        repeatTask = Task {
+            try? await Task.sleep(for: .seconds(repeatDelay))
+            while !Task.isCancelled {
+                await MainActor.run {
                     feedbackGenerator.impactOccurred()
                     action()
-                    guard repeatsOnHold else { return }
-                    // Start repeat after initial delay
-                    repeatTask = Task {
-                        try? await Task.sleep(for: .seconds(repeatDelay))
-                        while !Task.isCancelled {
-                            await MainActor.run {
-                                feedbackGenerator.impactOccurred()
-                                action()
-                            }
-                            try? await Task.sleep(for: .seconds(repeatInterval))
+                }
+                try? await Task.sleep(for: .seconds(repeatInterval))
+            }
+        }
+    }
+
+    private var pressGesture: some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { _ in
+                guard !isPressed else { return }
+                isPressed = true
+                feedbackGenerator.impactOccurred()
+
+                if let onLongPress {
+                    didLongPress = false
+                    longPressTask = Task {
+                        try? await Task.sleep(for: .seconds(ModifierLatch.holdThreshold))
+                        await MainActor.run {
+                            // Checked here rather than before the hop: a finger lifting
+                            // in between would cancel the task too late to stop this
+                            // block, and the key would both type and switch modes.
+                            guard !Task.isCancelled else { return }
+                            didLongPress = true
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                            onLongPress()
                         }
                     }
+                    return
                 }
-                .onEnded { _ in
-                    isPressed = false
-                    repeatTask?.cancel()
-                    repeatTask = nil
+
+                action()
+                guard repeatsOnHold else { return }
+                // Start repeat after initial delay
+                repeatTask = Task {
+                    try? await Task.sleep(for: .seconds(repeatDelay))
+                    while !Task.isCancelled {
+                        await MainActor.run {
+                            feedbackGenerator.impactOccurred()
+                            action()
+                        }
+                        try? await Task.sleep(for: .seconds(repeatInterval))
+                    }
                 }
-        )
-        // Collapse the dual-label keys into a single spoken element; otherwise
-        // VoiceOver reads both the normal and the shifted character.
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(voiceOverLabel ?? label)
-        .accessibilityAddTraits(.isKeyboardKey)
+            }
+            .onEnded { _ in
+                isPressed = false
+                repeatTask?.cancel()
+                repeatTask = nil
+                longPressTask?.cancel()
+                longPressTask = nil
+                // Deferred from press-down: a key with a long-press alternative only
+                // knows which of the two the user meant once the finger comes up.
+                if onLongPress != nil && !didLongPress {
+                    action()
+                }
+                didLongPress = false
+            }
     }
 
     @ViewBuilder
@@ -147,6 +288,10 @@ struct KeyCap: View {
                     .foregroundStyle(
                         isShifted ? Color.primary : Color.secondary
                     )
+                    // Word faces (the landscape cursor keys carry "Home" and "End") are
+                    // far wider than the single characters this layout was drawn for.
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
                     .frame(
                         maxWidth: .infinity,
                         maxHeight: .infinity,
@@ -162,6 +307,8 @@ struct KeyCap: View {
                     .foregroundStyle(
                         isShifted ? Color.secondary : Color.primary
                     )
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
                     .frame(
                         maxWidth: .infinity,
                         maxHeight: .infinity,
@@ -179,17 +326,24 @@ struct KeyCap: View {
         } else {
             // Single-label layout for letters, modifiers, space etc.
             Text(label)
-                .font(
-                    KeyboardFont.label(
-                        size: style == .modifier ? KeyboardFont.modifierSize : KeyboardFont.characterSize,
-                        weight: style == .modifier ? .regular : .semibold
-                    )
-                )
+                .font(singleLabelFont)
                 .minimumScaleFactor(0.5)
                 .lineLimit(1)
                 .foregroundStyle(Color.primary)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+    }
+
+    /// A modifier key spelled with a word — esc, home, end — is text, not an icon, and
+    /// needs `wordSize` rather than the glyph size tuned for ⇧ ⌫ ↵ ⇥.
+    private var singleLabelFont: Font {
+        guard style == .modifier else {
+            return KeyboardFont.label(size: KeyboardFont.characterSize, weight: .semibold)
+        }
+        if label.count > 1 {
+            return KeyboardFont.label(size: KeyboardFont.wordSize, weight: .medium)
+        }
+        return KeyboardFont.label(size: KeyboardFont.modifierSize, weight: .regular)
     }
 
     /// Pressing swaps the key toward the opposite tone, the way the system keyboard does:

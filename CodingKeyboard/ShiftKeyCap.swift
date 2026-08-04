@@ -8,11 +8,21 @@
 
 import SwiftUI
 
+/// A latching modifier cap: Shift, Caps Lock, and — in terminal mode — Control, Option
+/// and the terminal-mode switch itself.
+///
+/// It draws an active state that an ordinary `KeyCap` has no concept of, and it reports
+/// finger-down and finger-up separately instead of a single tap. All five keys need both,
+/// so they share this one view rather than each growing its own copy; the state machine
+/// that interprets the two callbacks is `ModifierLatch`.
 struct ShiftKeyCap: View {
     let shiftState: ShiftState
     let width: CGFloat
     let height: CGFloat
     let customLabel: String?
+    /// What VoiceOver calls this key. The visible label is either a bare glyph or a
+    /// four-letter abbreviation, and neither reads out usefully.
+    let accessibilityName: String
     /// Extra padding around the visual key that extends the hit area, exactly as KeyCap
     /// takes it. It must be applied *inside* this view: applied by the caller it lands
     /// outside the gesture modifier, leaving the gap between keys dead.
@@ -22,6 +32,7 @@ struct ShiftKeyCap: View {
 
     init(shiftState: ShiftState, width: CGFloat, height: CGFloat,
          label: String? = nil,
+         accessibilityName: String? = nil,
          hitPadding: EdgeInsets = .init(),
          onPressDown: @escaping @MainActor () -> Void,
          onRelease: @escaping @MainActor () -> Void) {
@@ -29,6 +40,7 @@ struct ShiftKeyCap: View {
         self.width = width
         self.height = height
         self.customLabel = label
+        self.accessibilityName = accessibilityName ?? label ?? "Shift"
         self.hitPadding = hitPadding
         self.onPressDown = onPressDown
         self.onRelease = onRelease
@@ -61,7 +73,7 @@ struct ShiftKeyCap: View {
                 .fill(backgroundColor)
             Text(label)
                 .font(customLabel != nil
-                      ? KeyboardFont.label(size: KeyboardFont.capsLockSize, weight: .medium)
+                      ? KeyboardFont.label(size: KeyboardFont.wordSize, weight: .medium)
                       : KeyboardFont.label(size: KeyboardFont.modifierSize))
                 .minimumScaleFactor(0.5)
                 .lineLimit(1)
@@ -92,7 +104,7 @@ struct ShiftKeyCap: View {
                 }
         )
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(customLabel == nil ? "Shift" : "Caps lock")
+        .accessibilityLabel(accessibilityName)
         .accessibilityValue(shiftState.isActive ? "on" : "off")
         .accessibilityAddTraits(.isKeyboardKey)
     }

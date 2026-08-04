@@ -29,8 +29,11 @@ enum KeyboardFont {
     /// Modifier glyphs: ⇧ ⌫ ↵ ⇥. Deliberately above `characterSize` — these read as icons
     /// rather than text and want the extra presence.
     static let modifierSize: CGFloat = 24
-    /// The word "caps" on the landscape caps-lock key — a word, not a glyph.
-    static let capsLockSize: CGFloat = 13
+    /// Modifier keys labelled with a word rather than a glyph: caps, esc, ctrl, opt,
+    /// term, home, end. `modifierSize` is tuned for single glyphs, and four letters at
+    /// that size only fit by being auto-shrunk to whatever the key happens to allow,
+    /// which makes no two of these keys agree on their text size.
+    static let wordSize: CGFloat = 13
     /// SF Symbol keys, currently just the dismiss-keyboard icon. Set below the text
     /// glyphs because a symbol fills its bounding box far more solidly than a character
     /// does, so an equal point size renders as a noticeably heavier key. Not a `design`

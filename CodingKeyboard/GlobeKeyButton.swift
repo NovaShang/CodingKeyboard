@@ -10,6 +10,9 @@ struct GlobeKeyButton: View {
     /// region while the cap stays inset, so the gaps flanking the key still trigger it —
     /// padding applied by the caller would sit outside the button and be dead.
     var hitPadding: EdgeInsets = .init()
+    /// Point size of the globe glyph. Landscape asks for a smaller one: its rows are
+    /// shorter than portrait's, so the same symbol reads as oversized there.
+    var symbolPointSize: CGFloat = 20
 
     /// The visible surface is a SwiftUI shape behind a UIButton, so the button's own
     /// highlighting never reaches it. Without this the globe was the one key on the
@@ -34,7 +37,7 @@ struct GlobeKeyButton: View {
                 .frame(width: width, height: height)
             // Unconstrained, so it expands to the padded frame below and takes touches
             // from the surrounding gap as well as the cap itself.
-            GlobeButtonRepresentable(isPressed: $isPressed)
+            GlobeButtonRepresentable(isPressed: $isPressed, symbolPointSize: symbolPointSize)
         }
         .frame(
             width: width + hitPadding.leading + hitPadding.trailing,
@@ -47,10 +50,11 @@ struct GlobeKeyButton: View {
 /// UIViewRepresentable that wraps a UIButton wired to `handleInputModeList(from:with:)`.
 private struct GlobeButtonRepresentable: UIViewRepresentable {
     @Binding var isPressed: Bool
+    let symbolPointSize: CGFloat
 
     func makeUIView(context: Context) -> UIButton {
         let button = UIButton(type: .system)
-        let config = UIImage.SymbolConfiguration(pointSize: 20, weight: .regular)
+        let config = UIImage.SymbolConfiguration(pointSize: symbolPointSize, weight: .regular)
         let image = UIImage(systemName: "globe", withConfiguration: config)
         button.setImage(image, for: .normal)
         button.tintColor = .label
