@@ -58,6 +58,10 @@ struct KeyCap: View {
     /// scroll view drops the press outright once the finger starts panning.
     var scrollSafe: Bool = false
 
+    /// Set by `CodingKeyboardView` for the wide layout — see `KeyboardFont`. Every size in
+    /// this view goes through it so the ratios between them survive the scaling.
+    @Environment(\.keyFontScale) private var fontScale
+
     // Key repeat timing (matches system keyboard feel)
     private let repeatDelay: TimeInterval = 0.4
     private let repeatInterval: TimeInterval = 0.1
@@ -281,7 +285,7 @@ struct KeyCap: View {
                 Text(shifted)
                     .font(
                         KeyboardFont.label(
-                            size: isShifted ? 15 : 11,
+                            size: (isShifted ? 15 : 11) * fontScale,
                             weight: isShifted ? .semibold : .regular
                         )
                     )
@@ -300,7 +304,7 @@ struct KeyCap: View {
                 Text(normal)
                     .font(
                         KeyboardFont.label(
-                            size: isShifted ? 11 : 15,
+                            size: (isShifted ? 11 : 15) * fontScale,
                             weight: isShifted ? .regular : .semibold
                         )
                     )
@@ -320,7 +324,7 @@ struct KeyCap: View {
         } else if label.hasPrefix("sf:") {
             // SF Symbol icon (e.g. "sf:globe")
             Image(systemName: String(label.dropFirst(3)))
-                .font(.system(size: KeyboardFont.symbolSize, weight: .regular))
+                .font(.system(size: KeyboardFont.symbolSize * fontScale, weight: .regular))
                 .foregroundStyle(Color.primary)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
@@ -338,12 +342,12 @@ struct KeyCap: View {
     /// needs `wordSize` rather than the glyph size tuned for ⇧ ⌫ ↵ ⇥.
     private var singleLabelFont: Font {
         guard style == .modifier else {
-            return KeyboardFont.label(size: KeyboardFont.characterSize, weight: .semibold)
+            return KeyboardFont.label(size: KeyboardFont.characterSize * fontScale, weight: .semibold)
         }
         if label.count > 1 {
-            return KeyboardFont.label(size: KeyboardFont.wordSize, weight: .medium)
+            return KeyboardFont.label(size: KeyboardFont.wordSize * fontScale, weight: .medium)
         }
-        return KeyboardFont.label(size: KeyboardFont.modifierSize, weight: .regular)
+        return KeyboardFont.label(size: KeyboardFont.modifierSize * fontScale, weight: .regular)
     }
 
     /// Pressing swaps the key toward the opposite tone, the way the system keyboard does:

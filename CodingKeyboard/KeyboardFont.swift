@@ -45,3 +45,30 @@ enum KeyboardFont {
         .system(size: size, weight: weight, design: design)
     }
 }
+
+// MARK: - Per-layout scaling
+
+/// How much to enlarge every size above, set once by `CodingKeyboardView` and read by the
+/// two views that draw labels.
+///
+/// The sizes are tuned for a phone, where a key is about as wide as it is tall. An iPad
+/// key is not: at 14.5 columns across a 13" screen a unit is roughly 91pt wide against a
+/// 63pt row, so a 19pt character sits in the middle of a cap with room to spare and reads
+/// as undersized. Scaling here rather than at the call sites keeps the ratios between
+/// characters, glyphs and words intact — they were chosen relative to each other, and
+/// only the whole set should move.
+///
+/// Deliberately an environment value rather than an idiom check inside `KeyboardFont`:
+/// the layout itself is chosen on available width, so that an iPad in Slide Over gets the
+/// phone layout. Type has to follow the same rule or a 320pt-wide iPad would draw large
+/// labels on small keys.
+private struct KeyFontScaleKey: EnvironmentKey {
+    static let defaultValue: CGFloat = 1
+}
+
+extension EnvironmentValues {
+    var keyFontScale: CGFloat {
+        get { self[KeyFontScaleKey.self] }
+        set { self[KeyFontScaleKey.self] = newValue }
+    }
+}

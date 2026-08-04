@@ -48,6 +48,11 @@ struct ShiftKeyCap: View {
 
     @State private var isPressed = false
 
+    /// Set by `CodingKeyboardView` for the wide layout — see `KeyboardFont`. Kept in step
+    /// with `KeyCap`, which scales the same way; a shift key drawn at phone size next to
+    /// scaled-up letters is worse than either size on its own.
+    @Environment(\.keyFontScale) private var fontScale
+
     private var label: String {
         if let customLabel { return customLabel }
         return shiftState == .locked ? "⇪" : "⇧"
@@ -73,8 +78,8 @@ struct ShiftKeyCap: View {
                 .fill(backgroundColor)
             Text(label)
                 .font(customLabel != nil
-                      ? KeyboardFont.label(size: KeyboardFont.wordSize, weight: .medium)
-                      : KeyboardFont.label(size: KeyboardFont.modifierSize))
+                      ? KeyboardFont.label(size: KeyboardFont.wordSize * fontScale, weight: .medium)
+                      : KeyboardFont.label(size: KeyboardFont.modifierSize * fontScale))
                 .minimumScaleFactor(0.5)
                 .lineLimit(1)
                 .foregroundStyle(shiftState.isActive ? Color.white : Color.primary)

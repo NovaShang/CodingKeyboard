@@ -40,8 +40,13 @@ struct CodingKeyboardView: View {
     private let sidePadding: CGFloat = 4
 
     // Landscape constants
-    private let lGap: CGFloat = 5
     private let lSidePadding: CGFloat = 4
+
+    /// Horizontal separation between keys in the wide layout. Wider on an iPad for the
+    /// same reason the rows are taller there: a 5pt channel between two 91pt caps reads as
+    /// no channel at all, and the keys run together into a solid block. On an iPhone in
+    /// landscape the caps are a third of that width and 5pt is already visible.
+    private var lGap: CGFloat { isVerticallyCompact ? 5 : 8 }
 
     /// True on iPhone in landscape, false on iPad in either orientation. The 14.5-column
     /// layout is shared by both, but their vertical budgets are not remotely alike: at
@@ -49,12 +54,20 @@ struct CodingKeyboardView: View {
     /// an iPad's, so the row metrics have to bend where the screen is short.
     private var isVerticallyCompact: Bool { verticalSizeClass == .compact }
 
-    /// Sized so a row occupies about 39.6pt including spacing, against the system
-    /// keyboard's ~40.5pt (162pt over 4 rows). The total still exceeds the system's
-    /// because this layout has five rows, not four — the density matches, the row
-    /// count is the deliberate difference.
-    private var lKeyHeight: CGFloat { isVerticallyCompact ? 34 : 42 }
-    private var lRowSpacing: CGFloat { isVerticallyCompact ? 5 : 7 }
+    /// Two different problems, so two different numbers.
+    ///
+    /// On an iPhone in landscape the constraint is the screen: at 34pt rows the keyboard
+    /// already takes half of it, and every point added comes straight out of whatever the
+    /// user is typing into.
+    ///
+    /// An iPad has no such shortage, and the earlier 42pt row — picked to match the system
+    /// keyboard's ~40.5pt density — turned out to be the wrong thing to match. Density is
+    /// an iPhone concern. On an iPad the keys are already wide (about 91pt per unit on a
+    /// 13" in landscape), so a 42pt row made every cap a letterbox and left the whole
+    /// keyboard shorter than the system's own. 63pt brings the total to 373pt, in line
+    /// with what iPadOS puts on screen, and gives the caps a shape closer to square.
+    private var lKeyHeight: CGFloat { isVerticallyCompact ? 34 : 63 }
+    private var lRowSpacing: CGFloat { isVerticallyCompact ? 5 : 10.5 }
 
     private var isShifted: Bool { shift.isActive }
 
@@ -119,6 +132,9 @@ struct CodingKeyboardView: View {
                 }
             }
             .preference(key: KeyboardHeightKey.self, value: targetHeight)
+            // Only the wide layout on a tall screen — an iPad. The phone layouts keep the
+            // sizes in `KeyboardFont` as written, which is what they were tuned against.
+            .environment(\.keyFontScale, landscape && !isVerticallyCompact ? 1.2 : 1)
         }
         .frame(height: currentHeight > 0 ? currentHeight : portraitHeight)
         .onPreferenceChange(KeyboardHeightKey.self) { newHeight in
