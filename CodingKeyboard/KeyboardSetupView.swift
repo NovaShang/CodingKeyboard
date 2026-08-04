@@ -3,6 +3,15 @@ import SwiftUI
 struct KeyboardSetupView: View {
     @Environment(\.openURL) private var openURL
 
+    /// Escape hatch out of this screen.
+    ///
+    /// Whether the keyboard is enabled is inferred from `AppleKeyboards`, a key that is
+    /// not part of any public API. If that inference is ever wrong — a future OS stops
+    /// populating it, or populates it differently — there is otherwise no way past this
+    /// screen and the app simply looks broken to someone who has already done what it
+    /// asked. That includes an App Review reviewer.
+    let onSkip: @MainActor () -> Void
+
     var body: some View {
         VStack(spacing: 32) {
             Spacer()
@@ -39,6 +48,9 @@ struct KeyboardSetupView: View {
             }
             .buttonStyle(.borderedProminent)
             .padding(.horizontal, 48)
+
+            Button("I've already enabled it", action: onSkip)
+                .font(.subheadline)
 
             Spacer()
             Spacer()
