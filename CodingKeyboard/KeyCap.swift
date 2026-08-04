@@ -24,6 +24,13 @@ struct KeyCap: View {
     let isShifted: Bool
     /// Extra padding around the visual key that extends the hit area.
     let hitPadding: EdgeInsets
+    /// Whether holding the key down repeats the action. Only navigation and deletion
+    /// keys should repeat; a character key that repeats turns an ordinary pause with
+    /// a finger resting on the key into a run of duplicated characters.
+    let repeatsOnHold: Bool
+    /// Spoken description for VoiceOver. The visible label is often a bare symbol
+    /// (⌫, ↵, ⇥) that does not read usefully on its own.
+    let voiceOverLabel: String?
 
     // Key repeat timing (matches system keyboard feel)
     private let repeatDelay: TimeInterval = 0.4
@@ -31,6 +38,12 @@ struct KeyCap: View {
 
     @State private var isPressed = false
     @State private var repeatTask: Task<Void, Never>? = nil
+    // NOTE: haptics are a no-op inside the keyboard extension. iOS only lets a
+    // keyboard play haptic feedback when the user grants "Allow Full Access", and
+    // this keyboard deliberately declares RequestsOpenAccess = false so it can
+    // guarantee it has no network capability. The calls are kept because they cost
+    // nothing, still work in the container app and in previews, and start working
+    // automatically for anyone who forks this and opts into open access.
     private let feedbackGenerator = UIImpactFeedbackGenerator(style: .light)
 
     init(
@@ -42,7 +55,9 @@ struct KeyCap: View {
         normalLabel: String? = nil,
         shiftedLabel: String? = nil,
         isShifted: Bool = false,
-        hitPadding: EdgeInsets = .init()
+        hitPadding: EdgeInsets = .init(),
+        repeatsOnHold: Bool = false,
+        voiceOverLabel: String? = nil
     ) {
         self.label = label
         self.style = style
@@ -53,6 +68,8 @@ struct KeyCap: View {
         self.shiftedLabel = shiftedLabel
         self.isShifted = isShifted
         self.hitPadding = hitPadding
+        self.repeatsOnHold = repeatsOnHold
+        self.voiceOverLabel = voiceOverLabel
     }
 
     var body: some View {
@@ -63,7 +80,10 @@ struct KeyCap: View {
         }
         .frame(width: width, height: height)
         .scaleEffect(isPressed ? 0.94 : 1.0)
-        .animation(.easeInOut(duration: 0.08), value: isPressed)
+        // Highlight instantly on press-down and only fade on release. Easing *into* the
+        // pressed state meant a fast tap could finish before the animation arrived, so
+        // the key barely appeared to react at all.
+        .animation(isPressed ? nil : .easeOut(duration: 0.16), value: isPressed)
         .padding(hitPadding)
         .contentShape(Rectangle())
         .onAppear { feedbackGenerator.prepare() }
@@ -74,6 +94,7 @@ struct KeyCap: View {
                     isPressed = true
                     feedbackGenerator.impactOccurred()
                     action()
+                    guard repeatsOnHold else { return }
                     // Start repeat after initial delay
                     repeatTask = Task {
                         try? await Task.sleep(for: .seconds(repeatDelay))
@@ -92,6 +113,11 @@ struct KeyCap: View {
                     repeatTask = nil
                 }
         )
+        // Collapse the dual-label keys into a single spoken element; otherwise
+        // VoiceOver reads both the normal and the shifted character.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(voiceOverLabel ?? label)
+        .accessibilityAddTraits(.isKeyboardKey)
     }
 
     @ViewBuilder
@@ -157,22 +183,27 @@ struct KeyCap: View {
         }
     }
 
+    /// Pressing swaps the key toward the opposite tone, the way the system keyboard does:
+    /// in light mode a white character key darkens and a gray modifier key turns white;
+    /// in dark mode both simply brighten, since there is no lighter surface to fall back
+    /// to. A scale change alone reads as almost nothing at typing speed.
     private var backgroundColor: Color {
+        let pressed = isPressed
         switch style {
         case .normal, .space:
             return Color(
                 UIColor(dynamicProvider: { t in
                     t.userInterfaceStyle == .dark
-                        ? UIColor(white: 0.40, alpha: 1)
-                        : UIColor(white: 1.0, alpha: 1)
+                        ? UIColor(white: pressed ? 0.62 : 0.40, alpha: 1)
+                        : UIColor(white: pressed ? 0.78 : 1.0, alpha: 1)
                 })
             )
         case .modifier:
             return Color(
                 UIColor(dynamicProvider: { t in
                     t.userInterfaceStyle == .dark
-                        ? UIColor(white: 0.25, alpha: 1)
-                        : UIColor(white: 0.80, alpha: 1)
+                        ? UIColor(white: pressed ? 0.46 : 0.25, alpha: 1)
+                        : UIColor(white: pressed ? 1.0 : 0.80, alpha: 1)
                 })
             )
         }

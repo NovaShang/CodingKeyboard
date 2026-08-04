@@ -8,14 +8,33 @@ private struct KeyboardHeightKey: PreferenceKey {
 }
 
 struct CodingKeyboardView: View {
+    /// Whether to draw our own globe key. False where the system already provides one
+    /// below the keyboard, in which case the freed slot goes to the space bar rather
+    /// than being left as a gap. Driven by `needsInputModeSwitchKey` in the host
+    /// controller — never by a device-model check.
+    var showsGlobeKey: Bool = true
     /// Called whenever a key is tapped. The caller decides what to do with the action.
     let onAction: @MainActor (KeyAction) -> Void
+
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     @State private var shiftState: ShiftState = .off
     /// Timestamp of the last shift finger-lift, used to detect double-tap on the next press-down.
     @State private var lastShiftReleaseTime: Date = .distantPast
-    /// Set to true when a double-tap is detected on press-down, so the following tap-up is ignored.
+    /// Set to true when a double-tap is detected on press-down, so the following lift is ignored.
     @State private var shiftPressWasDoubleTap = false
+    /// True while a finger is resting on a Shift key.
+    @State private var isShiftHeld = false
+    /// When the current Shift press began, used to tell a tap from a deliberate hold.
+    @State private var shiftPressTime: Date = .distantPast
+    /// Shift's state before the current press, used to resolve a tap into a toggle.
+    @State private var shiftStateBeforePress: ShiftState = .off
+    /// Whether any key was pressed while Shift was being held down.
+    @State private var didTypeWhileShiftHeld = false
+
+    private let shiftDoubleTapWindow: TimeInterval = 0.3
+    /// Above this, a press with nothing typed reads as an abandoned hold rather than a tap.
+    private let shiftHoldThreshold: TimeInterval = 0.5
 
     // Portrait constants
     private let keyHeight: CGFloat = 44
@@ -26,10 +45,21 @@ struct CodingKeyboardView: View {
     private let sidePadding: CGFloat = 8
 
     // Landscape constants
-    private let lKeyHeight: CGFloat = 42
     private let lGap: CGFloat = 5
-    private let lRowSpacing: CGFloat = 7
     private let lSidePadding: CGFloat = 6
+
+    /// True on iPhone in landscape, false on iPad in either orientation. The 14.5-column
+    /// layout is shared by both, but their vertical budgets are not remotely alike: at
+    /// 42pt rows this keyboard covers 63% of an iPhone landscape screen and only 30% of
+    /// an iPad's, so the row metrics have to bend where the screen is short.
+    private var isVerticallyCompact: Bool { verticalSizeClass == .compact }
+
+    /// Sized so a row occupies about 39.6pt including spacing, against the system
+    /// keyboard's ~40.5pt (162pt over 4 rows). The total still exceeds the system's
+    /// because this layout has five rows, not four — the density matches, the row
+    /// count is the deliberate difference.
+    private var lKeyHeight: CGFloat { isVerticallyCompact ? 34 : 42 }
+    private var lRowSpacing: CGFloat { isVerticallyCompact ? 5 : 7 }
 
     private var isShifted: Bool { shiftState.isActive }
 
@@ -43,15 +73,14 @@ struct CodingKeyboardView: View {
         lKeyHeight * 5 + lRowSpacing * 4 + 8
     }
 
-    private var isIPad: Bool {
-        UIDevice.current.userInterfaceIdiom == .pad
-    }
-
     @State private var currentHeight: CGFloat = 0
 
     var body: some View {
         GeometryReader { geo in
-            let landscape = isIPad || geo.size.width > 500
+            // Chosen purely on available width, never on device idiom: an iPad in
+            // Slide Over or a narrow split is only ~320pt wide, and forcing the
+            // 14.5-column layout there shrinks every key to about 17pt.
+            let landscape = geo.size.width > 500
             let targetHeight = landscape ? landscapeHeight : portraitHeight
 
             Group {
@@ -90,20 +119,21 @@ struct CodingKeyboardView: View {
                     width: shiftKeyWidth,
                     height: keyHeight,
                     onPressDown: handleShiftPressDown,
-                    onTap: handleShiftTap,
-                    onLongPressBegin: handleShiftLongPressBegin,
-                    onLongPressEnd: handleShiftLongPressEnd
+                    onRelease: handleShiftRelease
                 )
                 .padding(.horizontal, gap / 2)
                 .padding(.vertical, rowSpacing / 2)
                 KeyboardRow(keys: buildRow4Body(shifted: isShifted), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle, rowSpacing: rowSpacing)
             }
             HStack(spacing: 0) {
-                GlobeKeyButton(width: unitWidth, height: shortKeyHeight)
-                    .frame(width: unitWidth, height: shortKeyHeight)
-                    .padding(.horizontal, gap / 2)
-                    .padding(.vertical, rowSpacing / 2)
-                KeyboardRow(keys: buildRow5Body(shifted: isShifted), unitWidth: unitWidth, keyHeight: shortKeyHeight, gap: gap, onTap: handle, rowSpacing: rowSpacing)
+                if showsGlobeKey {
+                    GlobeKeyButton(width: unitWidth, height: shortKeyHeight)
+                        .frame(width: unitWidth, height: shortKeyHeight)
+                        .padding(.horizontal, gap / 2)
+                        .padding(.vertical, rowSpacing / 2)
+                }
+                // Without the globe key the row is one unit short; it goes to the space bar.
+                KeyboardRow(keys: buildRow5Body(shifted: isShifted, spaceUnits: showsGlobeKey ? 2.0 : 3.0), unitWidth: unitWidth, keyHeight: shortKeyHeight, gap: gap, onTap: handle, rowSpacing: rowSpacing)
             }
         }
         .padding(.top, 8)
@@ -132,9 +162,7 @@ struct CodingKeyboardView: View {
                     height: lKeyHeight,
                     label: "caps",
                     onPressDown: handleShiftPressDown,
-                    onTap: handleShiftTap,
-                    onLongPressBegin: handleShiftLongPressBegin,
-                    onLongPressEnd: handleShiftLongPressEnd
+                    onRelease: handleShiftRelease
                 )
                 .padding(.horizontal, lGap / 2)
                 .padding(.vertical, lRowSpacing / 2)
@@ -147,9 +175,7 @@ struct CodingKeyboardView: View {
                     width: shiftKeyWidth,
                     height: lKeyHeight,
                     onPressDown: handleShiftPressDown,
-                    onTap: handleShiftTap,
-                    onLongPressBegin: handleShiftLongPressBegin,
-                    onLongPressEnd: handleShiftLongPressEnd
+                    onRelease: handleShiftRelease
                 )
                 .padding(.horizontal, lGap / 2)
                 .padding(.vertical, lRowSpacing / 2)
@@ -159,21 +185,22 @@ struct CodingKeyboardView: View {
                     width: shiftKeyWidth,
                     height: lKeyHeight,
                     onPressDown: handleShiftPressDown,
-                    onTap: handleShiftTap,
-                    onLongPressBegin: handleShiftLongPressBegin,
-                    onLongPressEnd: handleShiftLongPressEnd
+                    onRelease: handleShiftRelease
                 )
                 .padding(.horizontal, lGap / 2)
                 .padding(.vertical, lRowSpacing / 2)
             }
             // Row 4: 🌐 ↓ ␣ ↓
             HStack(spacing: 0) {
-                let globeWidth = unitWidth * 1.5 + lGap * 0.5
-                GlobeKeyButton(width: globeWidth, height: lKeyHeight)
-                    .frame(width: globeWidth, height: lKeyHeight)
-                    .padding(.horizontal, lGap / 2)
-                    .padding(.vertical, lRowSpacing / 2)
-                KeyboardRow(keys: buildLandscapeRow4Body(shifted: isShifted), unitWidth: unitWidth, keyHeight: lKeyHeight, gap: lGap, onTap: handle, rowSpacing: lRowSpacing)
+                if showsGlobeKey {
+                    let globeWidth = unitWidth * 1.5 + lGap * 0.5
+                    GlobeKeyButton(width: globeWidth, height: lKeyHeight)
+                        .frame(width: globeWidth, height: lKeyHeight)
+                        .padding(.horizontal, lGap / 2)
+                        .padding(.vertical, lRowSpacing / 2)
+                }
+                // Without the globe key the row is 1.5 units short; they go to the space bar.
+                KeyboardRow(keys: buildLandscapeRow4Body(shifted: isShifted, spaceUnits: showsGlobeKey ? 8.0 : 9.5), unitWidth: unitWidth, keyHeight: lKeyHeight, gap: lGap, onTap: handle, rowSpacing: lRowSpacing)
             }
         }
         .padding(.top, 6)
@@ -182,58 +209,69 @@ struct CodingKeyboardView: View {
 
     // MARK: - Shift gesture handlers
 
-    // Finger touched down: detect double-tap by comparing to the last release time.
+    // Shift takes effect the moment the finger lands, never on lift and never after a
+    // delay, so holding Shift with one thumb and typing with the other capitalizes from
+    // the very first keystroke. What the press *meant* is resolved on release instead.
     private func handleShiftPressDown() {
         let timeSinceRelease = Date().timeIntervalSince(lastShiftReleaseTime)
-        if timeSinceRelease < 0.25 && shiftState == .on {
+        shiftStateBeforePress = shiftState
+        shiftPressTime = Date()
+        didTypeWhileShiftHeld = false
+        isShiftHeld = true
+
+        if timeSinceRelease < shiftDoubleTapWindow && shiftState == .on {
             // Second tap quickly after the first → lock
             shiftState = .locked
             shiftPressWasDoubleTap = true
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        } else {
-            shiftPressWasDoubleTap = false
+            return
+        }
+        shiftPressWasDoubleTap = false
+        if shiftState == .off {
+            shiftState = .momentary
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
         }
     }
 
-    // Short press completed. If this was the second tap of a double-tap, it was already
-    // handled on press-down, so we skip it here to avoid toggling the state back off.
-    private func handleShiftTap() {
-        defer { lastShiftReleaseTime = Date() }
+    private func handleShiftRelease() {
+        defer {
+            lastShiftReleaseTime = Date()
+            isShiftHeld = false
+        }
+        // The lock was already applied on press-down; leave it alone.
         if shiftPressWasDoubleTap {
             shiftPressWasDoubleTap = false
             return
         }
-        switch shiftState {
+        // Used as a held modifier — the capitals are already typed, so drop it.
+        if didTypeWhileShiftHeld {
+            shiftState = .off
+            return
+        }
+        // Held deliberately but never used: treat as cancelled rather than leaving Shift
+        // armed for a character the user never meant to capitalize.
+        if Date().timeIntervalSince(shiftPressTime) >= shiftHoldThreshold {
+            shiftState = .off
+            return
+        }
+        // A plain tap: toggle relative to whatever Shift was before this press.
+        switch shiftStateBeforePress {
         case .off:
             shiftState = .on
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        case .on:
+        case .on, .locked, .momentary:
             shiftState = .off
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        case .momentary:
-            shiftState = .off
-        case .locked:
-            shiftState = .off
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
         }
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
         onAction(.shift)
-    }
-
-    private func handleShiftLongPressBegin() {
-        shiftState = .momentary
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-    }
-
-    private func handleShiftLongPressEnd() {
-        if shiftState == .momentary {
-            shiftState = .off
-        }
     }
 
     // MARK: - General key handler
 
     private func handle(_ action: KeyAction) {
         if case .shift = action { return }  // shift handled separately
+        if isShiftHeld {
+            didTypeWhileShiftHeld = true
+        }
         // .on resets after one character; .momentary and .locked persist
         if shiftState == .on {
             shiftState = .off

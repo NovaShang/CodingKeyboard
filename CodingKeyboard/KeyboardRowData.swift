@@ -90,13 +90,15 @@ func buildRow4Body(shifted: Bool) -> [KeyDef] {
 }
 
 // Row 5: 🌐(1) + body(9)  — 10 units total
-// The globe key is rendered separately as a native UIKit button.
-func buildRow5Body(shifted: Bool) -> [KeyDef] {
+// The globe key is rendered separately as a native UIKit button, and is absent wherever
+// the system supplies its own. `spaceUnits` absorbs the difference: 2.0 with the globe
+// key present, 3.0 without it, so the row always totals 10 units.
+func buildRow5Body(shifted: Bool, spaceUnits: CGFloat = 2.0) -> [KeyDef] {
     var r = [KeyDef]()
     r.append(.shiftable("\\", "|", isShifted: shifted))
     r.append(.shiftable("/", "?", isShifted: shifted))
     r.append(.shiftable("`", "~", isShifted: shifted))
-    r.append(KeyDef(label: "␣", action: .space, units: 2.0))
+    r.append(KeyDef(label: "␣", action: .space, units: spaceUnits))
     r.append(.shiftable(",", "<", isShifted: shifted))
     r.append(.shiftable(".", ">", isShifted: shifted))
     r.append(KeyDef(label: "↵", action: .enter, units: 2.0))
@@ -184,11 +186,13 @@ func buildLandscapeRow3Body(shifted: Bool) -> [KeyDef] {
 }
 
 // Landscape Row 4: 🌐(1.5) ↓(1.5) ␣(8) ←(1) →(1) ↓(1.5) — 14.5 units
-// The globe key is rendered separately as a native UIKit button.
-func buildLandscapeRow4Body(shifted: Bool) -> [KeyDef] {
+// The globe key is rendered separately as a native UIKit button, and is absent wherever
+// the system supplies its own. `spaceUnits` absorbs the difference: 8.0 with the globe
+// key present, 9.5 without it, so the row always totals 14.5 units.
+func buildLandscapeRow4Body(shifted: Bool, spaceUnits: CGFloat = 8.0) -> [KeyDef] {
     var r = [KeyDef]()
     r.append(KeyDef(label: "↓", action: .dismiss, units: 1.5))
-    r.append(KeyDef(label: "␣", action: .space, units: 8.0))
+    r.append(KeyDef(label: "␣", action: .space, units: spaceUnits))
     r.append(KeyDef(label: "←", action: .cursorLeft, units: 1.0))
     r.append(KeyDef(label: "→", action: .cursorRight, units: 1.0))
     r.append(KeyDef(label: "↓", action: .dismiss, units: 1.5))

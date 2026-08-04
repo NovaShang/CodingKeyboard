@@ -1,6 +1,6 @@
 //
 //  ShiftKeyCap.swift
-//  NovaCodingKeyboard
+//  CodingKeyboard
 //
 //  Created by Nova on 3/1/26.
 //
@@ -14,31 +14,21 @@ struct ShiftKeyCap: View {
     let height: CGFloat
     let customLabel: String?
     let onPressDown: @MainActor () -> Void
-    let onTap: @MainActor () -> Void
-    let onLongPressBegin: @MainActor () -> Void
-    let onLongPressEnd: @MainActor () -> Void
+    let onRelease: @MainActor () -> Void
 
     init(shiftState: ShiftState, width: CGFloat, height: CGFloat,
          label: String? = nil,
          onPressDown: @escaping @MainActor () -> Void,
-         onTap: @escaping @MainActor () -> Void,
-         onLongPressBegin: @escaping @MainActor () -> Void,
-         onLongPressEnd: @escaping @MainActor () -> Void) {
+         onRelease: @escaping @MainActor () -> Void) {
         self.shiftState = shiftState
         self.width = width
         self.height = height
         self.customLabel = label
         self.onPressDown = onPressDown
-        self.onTap = onTap
-        self.onLongPressBegin = onLongPressBegin
-        self.onLongPressEnd = onLongPressEnd
+        self.onRelease = onRelease
     }
 
     @State private var isPressed = false
-    @State private var longPressTask: Task<Void, Never>? = nil
-    @State private var didLongPress = false
-
-    private let longPressThreshold: TimeInterval = 0.15
 
     private var label: String {
         if let customLabel { return customLabel }
@@ -47,10 +37,13 @@ struct ShiftKeyCap: View {
 
     private var backgroundColor: Color {
         let active = shiftState.isActive
+        let pressed = isPressed
         return Color(UIColor(dynamicProvider: { t in
             if t.userInterfaceStyle == .dark {
+                if pressed { return UIColor(white: active ? 0.70 : 0.46, alpha: 1) }
                 return active ? UIColor(white: 0.55, alpha: 1) : UIColor(white: 0.25, alpha: 1)
             } else {
+                if pressed { return UIColor(white: active ? 0.35 : 1.0, alpha: 1) }
                 return active ? UIColor(white: 0.50, alpha: 1) : UIColor(white: 0.80, alpha: 1)
             }
         }))
@@ -70,35 +63,26 @@ struct ShiftKeyCap: View {
         }
         .frame(width: width, height: height)
         .scaleEffect(isPressed ? 0.94 : 1.0)
-        .animation(.easeInOut(duration: 0.08), value: isPressed)
+        .animation(isPressed ? nil : .easeOut(duration: 0.16), value: isPressed)
+        // Deliberately timer-free: the key reports only finger-down and finger-up, and
+        // the parent resolves what the press meant. Shift has to take effect the
+        // instant the finger lands, or holding it with one thumb and typing with the
+        // other produces lowercase until some threshold elapses.
         .gesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { _ in
                     guard !isPressed else { return }
                     isPressed = true
-                    didLongPress = false
                     onPressDown()
-                    // Schedule long-press activation
-                    longPressTask = Task {
-                        try? await Task.sleep(for: .seconds(longPressThreshold))
-                        guard !Task.isCancelled else { return }
-                        await MainActor.run {
-                            didLongPress = true
-                            onLongPressBegin()
-                        }
-                    }
                 }
                 .onEnded { _ in
                     isPressed = false
-                    longPressTask?.cancel()
-                    longPressTask = nil
-                    if didLongPress {
-                        onLongPressEnd()
-                    } else {
-                        onTap()
-                    }
-                    didLongPress = false
+                    onRelease()
                 }
         )
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(customLabel == nil ? "Shift" : "Caps lock")
+        .accessibilityValue(shiftState.isActive ? "on" : "off")
+        .accessibilityAddTraits(.isKeyboardKey)
     }
 }

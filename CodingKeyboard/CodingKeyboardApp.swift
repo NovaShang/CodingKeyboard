@@ -1,6 +1,6 @@
 //
-//  NovaCodingKeyboardApp.swift
-//  NovaCodingKeyboard
+//  CodingKeyboardApp.swift
+//  CodingKeyboard
 //
 //  Created by Nova on 3/1/26.
 //
@@ -8,7 +8,7 @@
 import SwiftUI
 
 @main
-struct NovaCodingKeyboardApp: App {
+struct CodingKeyboardApp: App {
     @Environment(\.scenePhase) private var scenePhase
     @State private var isKeyboardEnabled = false
 

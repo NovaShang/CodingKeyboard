@@ -1,0 +1,14 @@
+// Copy this file to Local.xcconfig and fill in your own values.
+//
+//     cp Configuration/Local.xcconfig.example Configuration/Local.xcconfig
+//
+// Local.xcconfig is gitignored. Nothing you put here will be committed.
+
+// Your Apple Developer Team ID. Find it at
+// https://developer.apple.com/account under Membership details,
+// or in Xcode: Settings → Accounts → your team → the ID in parentheses.
+DEVELOPMENT_TEAM = YOUR_TEAM_ID
+
+// Optional: if you fork this project, point the bundle identifiers at a prefix
+// you own. Leave these commented out to keep the upstream identifiers.
+// PRODUCT_BUNDLE_IDENTIFIER = com.example.CodingKeyboard

@@ -1,0 +1,18 @@
+// Base.xcconfig — committed to the repository.
+//
+// Signing identity is intentionally NOT stored here. Copy Local.xcconfig.example
+// to Local.xcconfig and put your own Apple Developer Team ID there; Local.xcconfig
+// is gitignored so it never reaches the repository.
+//
+// The `#include?` below is an *optional* include: if Local.xcconfig is absent the
+// project still configures and builds (simulator builds need no team), so a fresh
+// clone works with no setup.
+
+#include? "Local.xcconfig"
+
+// Fallback when Local.xcconfig is missing. An empty team makes Xcode fall back to
+// "no signing team selected", which is fine for the simulator and prompts you to
+// pick one when you build to a device.
+DEVELOPMENT_TEAM = $(inherited)
+
+CODE_SIGN_STYLE = Automatic

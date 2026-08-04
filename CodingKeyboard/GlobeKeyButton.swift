@@ -7,12 +7,18 @@ struct GlobeKeyButton: View {
     let width: CGFloat
     let height: CGFloat
 
+    /// The visible surface is a SwiftUI shape behind a UIButton, so the button's own
+    /// highlighting never reaches it. Without this the globe was the one key on the
+    /// keyboard that gave no press feedback whatsoever.
+    @State private var isPressed = false
+
     private var backgroundColor: Color {
-        Color(
+        let pressed = isPressed
+        return Color(
             UIColor(dynamicProvider: { t in
                 t.userInterfaceStyle == .dark
-                    ? UIColor(white: 0.25, alpha: 1)
-                    : UIColor(white: 0.80, alpha: 1)
+                    ? UIColor(white: pressed ? 0.46 : 0.25, alpha: 1)
+                    : UIColor(white: pressed ? 1.0 : 0.80, alpha: 1)
             })
         )
     }
@@ -21,14 +27,17 @@ struct GlobeKeyButton: View {
         ZStack {
             RoundedRectangle(cornerRadius: 8)
                 .fill(backgroundColor)
-            GlobeButtonRepresentable()
+            GlobeButtonRepresentable(isPressed: $isPressed)
         }
         .frame(width: width, height: height)
+        .animation(isPressed ? nil : .easeOut(duration: 0.16), value: isPressed)
     }
 }
 
 /// UIViewRepresentable that wraps a UIButton wired to `handleInputModeList(from:with:)`.
 private struct GlobeButtonRepresentable: UIViewRepresentable {
+    @Binding var isPressed: Bool
+
     func makeUIView(context: Context) -> UIButton {
         let button = UIButton(type: .system)
         let config = UIImage.SymbolConfiguration(pointSize: 20, weight: .regular)
@@ -36,6 +45,8 @@ private struct GlobeButtonRepresentable: UIViewRepresentable {
         button.setImage(image, for: .normal)
         button.tintColor = .label
         button.backgroundColor = .clear
+        // The button carries only an image, so VoiceOver has nothing to announce.
+        button.accessibilityLabel = "Next keyboard"
 
         // The system handles tap (advance) and long-press (picker) automatically
         // when we target handleInputModeList(from:with:) for .allTouchEvents.
@@ -44,17 +55,41 @@ private struct GlobeButtonRepresentable: UIViewRepresentable {
             action: #selector(Coordinator.forwardToInputViewController(_:event:)),
             for: .allTouchEvents
         )
+        // Separate targets purely for the highlight. Registering these alongside the
+        // .allTouchEvents target above does not disturb it — both fire.
+        button.addTarget(
+            context.coordinator,
+            action: #selector(Coordinator.pressDown),
+            for: [.touchDown, .touchDragEnter]
+        )
+        button.addTarget(
+            context.coordinator,
+            action: #selector(Coordinator.pressUp),
+            for: [.touchUpInside, .touchUpOutside, .touchCancel, .touchDragExit]
+        )
 
         return button
     }
 
-    func updateUIView(_ uiView: UIButton, context: Context) {}
+    func updateUIView(_ uiView: UIButton, context: Context) {
+        // Refreshed each update so the coordinator never holds a stale binding.
+        context.coordinator.isPressed = $isPressed
+    }
 
     func makeCoordinator() -> Coordinator {
-        Coordinator()
+        Coordinator(isPressed: $isPressed)
     }
 
     final class Coordinator: NSObject {
+        var isPressed: Binding<Bool>
+
+        init(isPressed: Binding<Bool>) {
+            self.isPressed = isPressed
+        }
+
+        @objc func pressDown() { isPressed.wrappedValue = true }
+        @objc func pressUp() { isPressed.wrappedValue = false }
+
         @objc func forwardToInputViewController(_ sender: UIView, event: UIEvent) {
             var responder: UIResponder? = sender
             while let next = responder?.next {

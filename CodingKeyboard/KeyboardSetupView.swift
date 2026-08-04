@@ -12,7 +12,7 @@ struct KeyboardSetupView: View {
                 .foregroundStyle(.secondary)
 
             VStack(spacing: 12) {
-                Text("Enable Nova Coding Keyboard")
+                Text("Enable Coding Keyboard")
                     .font(.title2.bold())
 
                 Text("Enable this keyboard in Settings,\nthen come back here.")
@@ -24,7 +24,7 @@ struct KeyboardSetupView: View {
             VStack(alignment: .leading, spacing: 16) {
                 stepRow(number: 1, text: "Tap the button below to open Settings")
                 stepRow(number: 2, text: "Select \"Keyboards\"")
-                stepRow(number: 3, text: "Enable \"NovaCodingKeyboard\"")
+                stepRow(number: 3, text: "Enable \"Coding Keyboard\"")
                 stepRow(number: 4, text: "Return to this app")
             }
             .padding(.horizontal, 32)

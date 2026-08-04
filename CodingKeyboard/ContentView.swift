@@ -10,7 +10,7 @@ struct ContentView: View {
             HStack(spacing: 8) {
                 Image(systemName: "globe")
                     .font(.body.weight(.semibold))
-                Text("Long-press  \(Image(systemName: "globe"))  on the keyboard to switch to **Nova Coding Keyboard**")
+                Text("Long-press  \(Image(systemName: "globe"))  on the keyboard to switch to **Coding Keyboard**")
                     .font(.subheadline)
             }
             .foregroundStyle(.secondary)
