@@ -23,9 +23,18 @@ struct KeyButton: View {
     }
 
     var rowSpacing: CGFloat = 0
+    /// Extra hit area on the outer edges, used by the first and last key of a centred
+    /// row so the centring inset is live rather than dead space.
+    var extraLeadingHit: CGFloat = 0
+    var extraTrailingHit: CGFloat = 0
 
     private var hitInsets: EdgeInsets {
-        EdgeInsets(top: rowSpacing / 2, leading: gap / 2, bottom: rowSpacing / 2, trailing: gap / 2)
+        EdgeInsets(
+            top: rowSpacing / 2,
+            leading: gap / 2 + extraLeadingHit,
+            bottom: rowSpacing / 2,
+            trailing: gap / 2 + extraTrailingHit
+        )
     }
 
     /// Only deletion and cursor movement repeat while held, matching the system
@@ -79,6 +88,10 @@ struct KeyboardRow: View {
     let gap: CGFloat
     let onTap: @MainActor (KeyAction) -> Void
     var rowSpacing: CGFloat = 0
+    /// Hit area handed to the outer edge of the first and last key. A centred row (the
+    /// ASDFGHJKL row) is inset by half a key at each end; without this that inset is
+    /// dead space, where the system keyboard lets the edge keys claim it.
+    var edgeHitPadding: CGFloat = 0
 
     var body: some View {
         HStack(spacing: 0) {
@@ -93,7 +106,9 @@ struct KeyboardRow: View {
                     // inference KeyButton's initializer expects, which a bare
                     // property reference does not.
                     onTap: { onTap($0) },
-                    rowSpacing: rowSpacing
+                    rowSpacing: rowSpacing,
+                    extraLeadingHit: i == keys.indices.first ? edgeHitPadding : 0,
+                    extraTrailingHit: i == keys.indices.last ? edgeHitPadding : 0
                 )
             }
         }

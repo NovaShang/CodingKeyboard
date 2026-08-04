@@ -13,17 +13,23 @@ struct ShiftKeyCap: View {
     let width: CGFloat
     let height: CGFloat
     let customLabel: String?
+    /// Extra padding around the visual key that extends the hit area, exactly as KeyCap
+    /// takes it. It must be applied *inside* this view: applied by the caller it lands
+    /// outside the gesture modifier, leaving the gap between keys dead.
+    let hitPadding: EdgeInsets
     let onPressDown: @MainActor () -> Void
     let onRelease: @MainActor () -> Void
 
     init(shiftState: ShiftState, width: CGFloat, height: CGFloat,
          label: String? = nil,
+         hitPadding: EdgeInsets = .init(),
          onPressDown: @escaping @MainActor () -> Void,
          onRelease: @escaping @MainActor () -> Void) {
         self.shiftState = shiftState
         self.width = width
         self.height = height
         self.customLabel = label
+        self.hitPadding = hitPadding
         self.onPressDown = onPressDown
         self.onRelease = onRelease
     }
@@ -55,8 +61,8 @@ struct ShiftKeyCap: View {
                 .fill(backgroundColor)
             Text(label)
                 .font(customLabel != nil
-                      ? .system(size: 13, weight: .medium)
-                      : .system(size: 24, weight: .regular))
+                      ? KeyboardFont.label(size: KeyboardFont.capsLockSize, weight: .medium)
+                      : KeyboardFont.label(size: KeyboardFont.modifierSize))
                 .minimumScaleFactor(0.5)
                 .lineLimit(1)
                 .foregroundStyle(shiftState.isActive ? Color.white : Color.primary)
@@ -64,6 +70,11 @@ struct ShiftKeyCap: View {
         .frame(width: width, height: height)
         .scaleEffect(isPressed ? 0.94 : 1.0)
         .animation(isPressed ? nil : .easeOut(duration: 0.16), value: isPressed)
+        .padding(hitPadding)
+        .background(keyHitFill)
+        // Rectangular on purpose: without it the hit shape follows the rounded
+        // background, so the four corners of the key do not respond.
+        .contentShape(Rectangle())
         // Deliberately timer-free: the key reports only finger-down and finger-up, and
         // the parent resolves what the press meant. Shift has to take effect the
         // instant the finger lands, or holding it with one thumb and typing with the

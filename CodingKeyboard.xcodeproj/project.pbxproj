@@ -54,6 +54,7 @@
 			membershipExceptions = (
 				CodingKeyboardView.swift,
 				GlobeKeyButton.swift,
+				KeyboardFont.swift,
 				KeyboardRowData.swift,
 				KeyboardSetupView.swift,
 				KeyButton.swift,

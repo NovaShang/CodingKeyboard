@@ -42,11 +42,14 @@ struct CodingKeyboardView: View {
     private let gap: CGFloat = 6
     private let totalCols: CGFloat = 10
     private let rowSpacing: CGFloat = 8
-    private let sidePadding: CGFloat = 8
+    /// Visible margin from the screen edge to the outermost key. Kept tight so the keys
+    /// get the width instead; must stay >= gap/2, since the container padding is this
+    /// minus the half-gap the edge keys already carry.
+    private let sidePadding: CGFloat = 4
 
     // Landscape constants
     private let lGap: CGFloat = 5
-    private let lSidePadding: CGFloat = 6
+    private let lSidePadding: CGFloat = 4
 
     /// True on iPhone in landscape, false on iPad in either orientation. The 14.5-column
     /// layout is shared by both, but their vertical budgets are not remotely alike: at
@@ -63,14 +66,31 @@ struct CodingKeyboardView: View {
 
     private var isShifted: Bool { shiftState.isActive }
 
-    /// Portrait total height: 4 full-height rows + 2 short rows + 5 row spacings + top padding
-    private var portraitHeight: CGFloat {
-        keyHeight * 4 + shortKeyHeight * 2 + rowSpacing * 5 + 8
+    // Handed to the keys that are not built by KeyboardRow — Shift and the globe — so
+    // their touch area matches a KeyCap's exactly. These two used to receive the same
+    // padding from the call site, but applied there it lands outside their gesture and
+    // the strip between keys goes dead.
+    private var portraitHitInsets: EdgeInsets {
+        EdgeInsets(top: rowSpacing / 2, leading: gap / 2, bottom: rowSpacing / 2, trailing: gap / 2)
     }
 
-    /// Landscape total height: 5 rows + 4 row spacings + top padding
+    private var landscapeHitInsets: EdgeInsets {
+        EdgeInsets(top: lRowSpacing / 2, leading: lGap / 2, bottom: lRowSpacing / 2, trailing: lGap / 2)
+    }
+
+    // Both totals count one full rowSpacing *per row*, not per gap between rows: every
+    // key carries rowSpacing/2 of hit padding above and below it, so a row occupies its
+    // key height plus a whole rowSpacing. Counting gaps instead left the declared height
+    // short of the content, which squeezes the bottom row.
+
+    /// Portrait: 4 full-height rows (QWERTY, ASDF, ZXCV, bottom) + 2 short rows + top inset.
+    private var portraitHeight: CGFloat {
+        keyHeight * 4 + shortKeyHeight * 2 + rowSpacing * 6 + 8
+    }
+
+    /// Landscape: 5 rows + top inset.
     private var landscapeHeight: CGFloat {
-        lKeyHeight * 5 + lRowSpacing * 4 + 8
+        lKeyHeight * 5 + lRowSpacing * 5 + 6
     }
 
     @State private var currentHeight: CGFloat = 0
@@ -111,33 +131,34 @@ struct CodingKeyboardView: View {
             KeyboardRow(keys: buildRow0(shifted: isShifted), unitWidth: unitWidth, keyHeight: shortKeyHeight, gap: gap, onTap: handle, rowSpacing: rowSpacing)
             KeyboardRow(keys: buildRow1(shifted: isShifted), unitWidth: unitWidth, keyHeight: shortKeyHeight, gap: gap, onTap: handle, rowSpacing: rowSpacing)
             KeyboardRow(keys: buildRow2(shifted: isShifted), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle, rowSpacing: rowSpacing)
-            KeyboardRow(keys: buildRow3(shifted: isShifted), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle, rowSpacing: rowSpacing)
-                .padding(.horizontal, halfUnit)
+            // No .padding here: the half-key inset is handed to A and L as hit area
+            // instead, which places them identically but leaves no dead strip.
+            KeyboardRow(keys: buildRow3(shifted: isShifted), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle, rowSpacing: rowSpacing, edgeHitPadding: halfUnit)
             HStack(spacing: 0) {
                 ShiftKeyCap(
                     shiftState: shiftState,
                     width: shiftKeyWidth,
                     height: keyHeight,
+                    hitPadding: portraitHitInsets,
                     onPressDown: handleShiftPressDown,
                     onRelease: handleShiftRelease
                 )
-                .padding(.horizontal, gap / 2)
-                .padding(.vertical, rowSpacing / 2)
                 KeyboardRow(keys: buildRow4Body(shifted: isShifted), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle, rowSpacing: rowSpacing)
             }
             HStack(spacing: 0) {
                 if showsGlobeKey {
-                    GlobeKeyButton(width: unitWidth, height: shortKeyHeight)
-                        .frame(width: unitWidth, height: shortKeyHeight)
-                        .padding(.horizontal, gap / 2)
-                        .padding(.vertical, rowSpacing / 2)
+                    GlobeKeyButton(width: unitWidth, height: keyHeight, hitPadding: portraitHitInsets)
                 }
                 // Without the globe key the row is one unit short; it goes to the space bar.
-                KeyboardRow(keys: buildRow5Body(shifted: isShifted, spaceUnits: showsGlobeKey ? 2.0 : 3.0), unitWidth: unitWidth, keyHeight: shortKeyHeight, gap: gap, onTap: handle, rowSpacing: rowSpacing)
+                KeyboardRow(keys: buildRow5Body(shifted: isShifted, spaceUnits: showsGlobeKey ? 2.0 : 3.0), unitWidth: unitWidth, keyHeight: keyHeight, gap: gap, onTap: handle, rowSpacing: rowSpacing)
             }
         }
         .padding(.top, 8)
-        .padding(.horizontal, sidePadding)
+        // Reduced by half a gap because the outermost keys already carry gap/2 of hit
+        // padding on their outer edge. Padding by the full sidePadding made every row
+        // exactly one gap wider than its container, and .leading alignment dumped that
+        // overflow on the right — an 11pt left margin against a 5pt right one.
+        .padding(.horizontal, sidePadding - gap / 2)
     }
 
     // MARK: - Landscape Layout (Mac-like, 5 rows)
@@ -161,11 +182,10 @@ struct CodingKeyboardView: View {
                     width: capsLockWidth,
                     height: lKeyHeight,
                     label: "caps",
+                    hitPadding: landscapeHitInsets,
                     onPressDown: handleShiftPressDown,
                     onRelease: handleShiftRelease
                 )
-                .padding(.horizontal, lGap / 2)
-                .padding(.vertical, lRowSpacing / 2)
                 KeyboardRow(keys: buildLandscapeRow2Body(shifted: isShifted), unitWidth: unitWidth, keyHeight: lKeyHeight, gap: lGap, onTap: handle, rowSpacing: lRowSpacing)
             }
             // Row 3: ⇧ ZXCVBNM , . / ⇧
@@ -174,37 +194,33 @@ struct CodingKeyboardView: View {
                     shiftState: shiftState,
                     width: shiftKeyWidth,
                     height: lKeyHeight,
+                    hitPadding: landscapeHitInsets,
                     onPressDown: handleShiftPressDown,
                     onRelease: handleShiftRelease
                 )
-                .padding(.horizontal, lGap / 2)
-                .padding(.vertical, lRowSpacing / 2)
                 KeyboardRow(keys: buildLandscapeRow3Body(shifted: isShifted), unitWidth: unitWidth, keyHeight: lKeyHeight, gap: lGap, onTap: handle, rowSpacing: lRowSpacing)
                 ShiftKeyCap(
                     shiftState: shiftState,
                     width: shiftKeyWidth,
                     height: lKeyHeight,
+                    hitPadding: landscapeHitInsets,
                     onPressDown: handleShiftPressDown,
                     onRelease: handleShiftRelease
                 )
-                .padding(.horizontal, lGap / 2)
-                .padding(.vertical, lRowSpacing / 2)
             }
             // Row 4: 🌐 ↓ ␣ ↓
             HStack(spacing: 0) {
                 if showsGlobeKey {
                     let globeWidth = unitWidth * 1.5 + lGap * 0.5
-                    GlobeKeyButton(width: globeWidth, height: lKeyHeight)
-                        .frame(width: globeWidth, height: lKeyHeight)
-                        .padding(.horizontal, lGap / 2)
-                        .padding(.vertical, lRowSpacing / 2)
+                    GlobeKeyButton(width: globeWidth, height: lKeyHeight, hitPadding: landscapeHitInsets)
                 }
                 // Without the globe key the row is 1.5 units short; they go to the space bar.
                 KeyboardRow(keys: buildLandscapeRow4Body(shifted: isShifted, spaceUnits: showsGlobeKey ? 8.0 : 9.5), unitWidth: unitWidth, keyHeight: lKeyHeight, gap: lGap, onTap: handle, rowSpacing: lRowSpacing)
             }
         }
         .padding(.top, 6)
-        .padding(.horizontal, lSidePadding)
+        // Same half-gap correction as the portrait layout.
+        .padding(.horizontal, lSidePadding - lGap / 2)
     }
 
     // MARK: - Shift gesture handlers

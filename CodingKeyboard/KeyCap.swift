@@ -1,5 +1,16 @@
 import SwiftUI
 
+/// Fill laid under a key's full hit rectangle, including the padding that widens it.
+///
+/// Hit testing here follows actually-rendered content: a region made only of padding is
+/// empty, and `.contentShape(Rectangle())` alone did not make it tappable. That left a
+/// dead strip along every gap between keys — 8pt between rows, 6pt between columns —
+/// which felt like the keys simply being smaller than they look.
+///
+/// This gives the whole rectangle real content to hit-test against. The alpha sits far
+/// below the threshold of visibility, but it is deliberately not zero.
+let keyHitFill = Color.black.opacity(0.002)
+
 // MARK: - KeyCapStyle
 
 enum KeyCapStyle {
@@ -85,6 +96,7 @@ struct KeyCap: View {
         // the key barely appeared to react at all.
         .animation(isPressed ? nil : .easeOut(duration: 0.16), value: isPressed)
         .padding(hitPadding)
+        .background(keyHitFill)
         .contentShape(Rectangle())
         .onAppear { feedbackGenerator.prepare() }
         .gesture(
@@ -127,10 +139,9 @@ struct KeyCap: View {
             ZStack(alignment: .center) {
                 Text(shifted)
                     .font(
-                        .system(
+                        KeyboardFont.label(
                             size: isShifted ? 15 : 11,
-                            weight: isShifted ? .semibold : .regular,
-                            design: .monospaced
+                            weight: isShifted ? .semibold : .regular
                         )
                     )
                     .foregroundStyle(
@@ -143,10 +154,9 @@ struct KeyCap: View {
                     )
                 Text(normal)
                     .font(
-                        .system(
+                        KeyboardFont.label(
                             size: isShifted ? 11 : 15,
-                            weight: isShifted ? .regular : .semibold,
-                            design: .monospaced
+                            weight: isShifted ? .regular : .semibold
                         )
                     )
                     .foregroundStyle(
@@ -163,17 +173,16 @@ struct KeyCap: View {
         } else if label.hasPrefix("sf:") {
             // SF Symbol icon (e.g. "sf:globe")
             Image(systemName: String(label.dropFirst(3)))
-                .font(.system(size: 20, weight: .regular))
+                .font(.system(size: KeyboardFont.symbolSize, weight: .regular))
                 .foregroundStyle(Color.primary)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             // Single-label layout for letters, modifiers, space etc.
             Text(label)
                 .font(
-                    .system(
-                        size: style == .modifier ? 24 : 19,
-                        weight: style == .modifier ? .regular : .semibold,
-                        design: style == .modifier ? .default : .monospaced
+                    KeyboardFont.label(
+                        size: style == .modifier ? KeyboardFont.modifierSize : KeyboardFont.characterSize,
+                        weight: style == .modifier ? .regular : .semibold
                     )
                 )
                 .minimumScaleFactor(0.5)

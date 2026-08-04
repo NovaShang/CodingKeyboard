@@ -6,6 +6,10 @@ import UIKit
 struct GlobeKeyButton: View {
     let width: CGFloat
     let height: CGFloat
+    /// Extra hit area around the visible cap. The UIButton is laid out across this whole
+    /// region while the cap stays inset, so the gaps flanking the key still trigger it —
+    /// padding applied by the caller would sit outside the button and be dead.
+    var hitPadding: EdgeInsets = .init()
 
     /// The visible surface is a SwiftUI shape behind a UIButton, so the button's own
     /// highlighting never reaches it. Without this the globe was the one key on the
@@ -27,9 +31,15 @@ struct GlobeKeyButton: View {
         ZStack {
             RoundedRectangle(cornerRadius: 8)
                 .fill(backgroundColor)
+                .frame(width: width, height: height)
+            // Unconstrained, so it expands to the padded frame below and takes touches
+            // from the surrounding gap as well as the cap itself.
             GlobeButtonRepresentable(isPressed: $isPressed)
         }
-        .frame(width: width, height: height)
+        .frame(
+            width: width + hitPadding.leading + hitPadding.trailing,
+            height: height + hitPadding.top + hitPadding.bottom
+        )
         .animation(isPressed ? nil : .easeOut(duration: 0.16), value: isPressed)
     }
 }

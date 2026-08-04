@@ -4,7 +4,7 @@ import Foundation
 // Layout: 10 columns, 6 rows
 // unitWidth = (totalWidth - 9 * gap) / 10
 
-// Row 0: ⇥(1) ←(1) →(1) [ ] ' ; - = ↓(1) — 10 units
+// Row 0: ⇥(1) ←(1) →(1) [ ] ' ; - = hide(1) — 10 units
 func buildRow0(shifted: Bool) -> [KeyDef] {
     var r = [KeyDef]()
     r.append(KeyDef(label: "⇥", action: .tab, units: 1.0))
@@ -16,7 +16,7 @@ func buildRow0(shifted: Bool) -> [KeyDef] {
     r.append(.shiftable(";", ":", isShifted: shifted))
     r.append(.shiftable("-", "_", isShifted: shifted))
     r.append(.shiftable("=", "+", isShifted: shifted))
-    r.append(KeyDef(label: "↓", action: .dismiss, units: 1.0))
+    r.append(KeyDef(label: "sf:keyboard.chevron.compact.down", action: .dismiss, units: 1.0))
     return r
 }
 
@@ -185,17 +185,17 @@ func buildLandscapeRow3Body(shifted: Bool) -> [KeyDef] {
     return r
 }
 
-// Landscape Row 4: 🌐(1.5) ↓(1.5) ␣(8) ←(1) →(1) ↓(1.5) — 14.5 units
+// Landscape Row 4: 🌐(1.5) hide(1.5) ␣(8) ←(1) →(1) hide(1.5) — 14.5 units
 // The globe key is rendered separately as a native UIKit button, and is absent wherever
 // the system supplies its own. `spaceUnits` absorbs the difference: 8.0 with the globe
 // key present, 9.5 without it, so the row always totals 14.5 units.
 func buildLandscapeRow4Body(shifted: Bool, spaceUnits: CGFloat = 8.0) -> [KeyDef] {
     var r = [KeyDef]()
-    r.append(KeyDef(label: "↓", action: .dismiss, units: 1.5))
+    r.append(KeyDef(label: "sf:keyboard.chevron.compact.down", action: .dismiss, units: 1.5))
     r.append(KeyDef(label: "␣", action: .space, units: spaceUnits))
     r.append(KeyDef(label: "←", action: .cursorLeft, units: 1.0))
     r.append(KeyDef(label: "→", action: .cursorRight, units: 1.0))
-    r.append(KeyDef(label: "↓", action: .dismiss, units: 1.5))
+    r.append(KeyDef(label: "sf:keyboard.chevron.compact.down", action: .dismiss, units: 1.5))
     return r
 }
 
