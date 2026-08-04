@@ -12,198 +12,90 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#0a0a0b;
-  --ink:#e9e7e2;
-  --dim:#84827c;
-  --faint:#403f3c;
-  --rule:#1e1e20;
-  --accent:#2ee08a;
-  --accent-2:#22d3ee;
-  --measure:74ch;
+  --bg:#0a0a0b; --ink:#e9e7e2; --dim:#84827c; --faint:#403f3c;
+  --rule:#1e1e20; --accent:#2ee08a;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{
   background:var(--bg); color:var(--ink);
   font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
-  font-weight:400; font-size:15px; line-height:1.65;
-  letter-spacing:-0.005em;
+  font-size:15px; font-weight:300; line-height:1.68; letter-spacing:-0.005em;
   -webkit-font-smoothing:antialiased;
-  padding:0 24px 120px;
+  padding:0 24px 100px;
 }
-/* Grain. Cheap, static, and the only texture on the page. */
-body::before{
-  content:""; position:fixed; inset:0; pointer-events:none; z-index:99; opacity:.5;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E");
-}
-.wrap{max-width:1040px;margin:0 auto}
-a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--faint);transition:border-color .18s,color .18s}
+.wrap{max-width:760px;margin:0 auto}
+a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--faint);
+  transition:border-color .18s,color .18s}
 a:hover{color:var(--accent);border-color:var(--accent)}
 
-/* ── masthead ─────────────────────────────────────────── */
-header{padding:88px 0 44px;border-bottom:1px solid var(--rule)}
-.eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
-h1{
-  font-size:clamp(34px,7vw,60px); font-weight:600; letter-spacing:-0.035em;
-  line-height:1.02; margin:20px 0 22px;
-}
-h1 .brace{color:var(--accent)}
-.lede{max-width:var(--measure);font-size:clamp(15px,2.1vw,18px);font-weight:300;line-height:1.6}
-.meta{margin-top:30px;display:flex;flex-wrap:wrap;gap:10px 26px;font-size:13px;color:var(--dim)}
+header{padding:96px 0 40px}
+h1{font-size:clamp(32px,6.5vw,46px);font-weight:500;letter-spacing:-0.035em;line-height:1.05}
+h1 .dot{color:var(--accent)}
+.lede{margin-top:20px;font-size:clamp(15px,2vw,17px);line-height:1.6}
+.meta{margin-top:26px;display:flex;flex-wrap:wrap;gap:8px 24px;font-size:13px;color:var(--dim)}
 .meta b{color:var(--ink);font-weight:500}
 .status{display:inline-flex;align-items:center;gap:9px}
-.dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex:none;
-  animation:pulse 2.4s ease-in-out infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.28}}
+.pip{width:6px;height:6px;border-radius:50%;background:var(--accent);flex:none}
 
-/* ── section scaffolding ──────────────────────────────── */
-section{padding:64px 0;border-bottom:1px solid var(--rule)}
-section:last-of-type{border-bottom:none}
-.sec-head{display:flex;gap:18px;align-items:baseline;margin-bottom:26px}
-.num{font-size:12px;color:var(--faint);font-weight:500;letter-spacing:.1em;flex:none}
-h2{font-size:clamp(19px,3vw,24px);font-weight:600;letter-spacing:-0.025em}
-p{max-width:var(--measure);font-weight:300;margin-bottom:16px}
-p:last-child{margin-bottom:0}
-.dim{color:var(--dim)}
+figure{margin:44px 0 0}
+figure img{width:100%;height:auto;display:block;border-radius:10px;
+  border:1px solid var(--rule);box-shadow:0 18px 50px rgba(0,0,0,.5)}
+figcaption{margin-top:11px;font-size:12.5px;color:var(--dim)}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.duo figure{margin-top:0}
 
-/* ── figures ──────────────────────────────────────────── */
-figure{margin:28px 0 0}
-figure img{
-  width:100%;height:auto;display:block;border-radius:10px;
-  border:1px solid var(--rule);
-  box-shadow:0 22px 60px rgba(0,0,0,.5);
-}
-figcaption{margin-top:11px;font-size:12.5px;color:var(--dim);font-weight:300}
+p{margin-top:26px}
+p.note{color:var(--dim);font-size:13.5px}
 
-/* Two columns on wide screens, stacked on narrow. `.pair` keeps a big landscape
-   shot next to a tall portrait one without either dictating the other's height. */
-.pair{display:grid;grid-template-columns:1fr;gap:28px}
-@media(min-width:860px){
-  .pair{grid-template-columns:1.9fr 1fr;align-items:start}
-  .pair figure{margin-top:28px}
-}
-/* The comparison earns full width: at half that, the difference between a stock
-   keyboard and this one is two grey rectangles. */
-.duo{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-@media(min-width:860px){.duo{gap:32px}}
-
-/* ── byte table ───────────────────────────────────────── */
-.tbl{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:8px}
-.tbl th{
-  text-align:left;font-weight:500;color:var(--dim);font-size:11px;
-  letter-spacing:.12em;text-transform:uppercase;
-  padding:0 18px 10px 0;border-bottom:1px solid var(--rule);white-space:nowrap;
-}
-.tbl td{padding:11px 18px 11px 0;border-bottom:1px solid var(--rule);vertical-align:top;font-weight:300}
-.tbl tr:last-child td{border-bottom:none}
-.tbl td:first-child{color:var(--ink);white-space:nowrap}
-.tbl code{color:var(--accent-2);font-weight:400}
-.tbl-scroll{overflow-x:auto}
-
-/* ── footer ───────────────────────────────────────────── */
-footer{padding:56px 0 0;font-size:13px;color:var(--dim);display:flex;flex-wrap:wrap;gap:12px 30px}
-
-@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+footer{margin-top:56px;padding-top:26px;border-top:1px solid var(--rule);
+  display:flex;flex-wrap:wrap;gap:10px 26px;font-size:13px;color:var(--dim)}
 </style>
 </head>
 <body>
 <div class="wrap">
 
 <header>
-  <div class="eyebrow">iPhone &amp; iPad · free · open source</div>
-  <h1>Coding&nbsp;Keyboard<span class="brace">.</span></h1>
+  <h1>Coding&nbsp;Keyboard<span class="dot">.</span></h1>
   <p class="lede">An iOS keyboard laid out the way a desktop keyboard is laid out. In landscape and on iPad, the top four rows are identical to a full-size keyboard, key for key — so you already know where everything is.</p>
   <div class="meta">
-    <span class="status"><span class="dot"></span>In review on the App Store</span>
+    <span class="status"><span class="pip"></span>In review on the App Store</span>
+    <span>iPhone &amp; iPad</span>
     <span>iOS <b>18.6+</b></span>
-    <span>No Full Access</span>
-    <span>MIT</span>
+    <span>Free · MIT</span>
   </div>
 </header>
 
-<section>
-  <div class="sec-head"><span class="num">01</span><h2>The layout</h2></div>
-  <p>Backtick left of the 1. Brackets right of the P. Backslash above return. A caps lock where caps lock goes, and shift on both sides. Four rows that match a full-size keyboard key for key, so nothing has to be learned and nothing has to be hunted for.</p>
+<figure>
+  <img src="images/ipad-layout.png" alt="Coding Keyboard in landscape on an iPad: esc, a number row, brackets, backslash, caps lock, shift on both sides and cursor keys." width="1600" height="1112">
+  <figcaption>iPad, landscape, with terminal mode on.</figcaption>
+</figure>
 
+<p>The stock iPhone keyboard hides the braces, brackets, backslash, pipe, backtick and tilde behind two levels of page switching, and has no Tab key at all. This one puts them on the first layer and prints every shifted value on the key that produces it.</p>
+
+<div class="duo">
   <figure>
-    <img src="images/ipad-layout.png" alt="Coding Keyboard in landscape on an iPad, showing a five-row layout with esc, a number row, brackets, backslash, caps lock and cursor keys." width="1600" height="1112">
-    <figcaption>iPad, landscape — shown with terminal mode on, which is where esc, ctrl and opt come from.</figcaption>
+    <img src="images/iphone-stock.png" alt="The stock iOS keyboard: letters, with every symbol behind a 123 key." width="660" height="1431">
+    <figcaption>The stock keyboard.</figcaption>
   </figure>
-
   <figure>
-    <img src="images/iphone-landscape.png" alt="The same full-size layout on an iPhone held sideways." width="1400" height="645">
-    <figcaption>Turn a phone sideways and the same five rows come with it.</figcaption>
+    <img src="images/iphone-layout.png" alt="Coding Keyboard on the same phone, with a number row, brackets, slash, backtick and Tab all visible at once." width="660" height="1431">
+    <figcaption>The same phone.</figcaption>
   </figure>
-</section>
+</div>
 
-<section>
-  <div class="sec-head"><span class="num">02</span><h2>Why</h2></div>
-  <p>The stock iPhone keyboard hides the braces, square brackets, backslash, pipe, backtick and tilde behind two levels of page switching, and has no Tab key at all. iPad fares better, but only on the largest screens — on an 11-inch iPad the system keyboard has no number row, no brackets, no backslash and no arrow keys either.</p>
-  <p>That is fine for prose and miserable for code, SSH sessions and config files. This one puts them all on the first layer, and prints every shifted value on the key that produces it.</p>
+<p>Terminal mode adds esc, ctrl and opt and a full set of cursor keys, and sends the bytes a real keyboard would have sent — <code>⌃C</code> is one byte, <code>0x03</code> — so a shell cannot tell the difference.</p>
 
-  <div class="duo">
-    <figure>
-      <img src="images/iphone-stock.png" alt="The stock iOS keyboard: letters only, with symbols behind a 123 key." width="660" height="1431">
-      <figcaption>The stock keyboard.</figcaption>
-    </figure>
-    <figure>
-      <img src="images/iphone-layout.png" alt="Coding Keyboard on the same phone: a number row, brackets, slash, backtick and Tab all visible at once." width="660" height="1431">
-      <figcaption>The same phone, same text field. Portrait is a compact ten-column layout built for thumbs.</figcaption>
-    </figure>
-  </div>
-</section>
+<p>It does not request Full Access. Without it, iOS grants a keyboard extension no network capability at all: it cannot send your keystrokes anywhere because it cannot send anything anywhere.</p>
 
-<section>
-  <div class="sec-head"><span class="num">03</span><h2>Terminal mode</h2></div>
-  <p>A terminal does not receive key events — the PTY sees a byte stream. So terminal mode sends the bytes a real keyboard would have produced, and a shell cannot tell the difference.</p>
-
-  <div class="tbl-scroll">
-    <table class="tbl">
-      <thead><tr><th>Key</th><th>Normal</th><th>Terminal</th></tr></thead>
-      <tbody>
-        <tr><td>Return</td><td class="dim">newline</td><td><code>\r</code> — CR, 0x0D</td></tr>
-        <tr><td>⌃ + letter</td><td class="dim">—</td><td>the C0 byte: <code>⌃C = 0x03</code>, <code>⌃D = 0x04</code>, <code>⌃R = 0x12</code></td></tr>
-        <tr><td>⌥ + key</td><td class="dim">—</td><td><code>ESC</code> then the key — Meta is an ESC prefix</td></tr>
-        <tr><td>← →</td><td class="dim">move the caret</td><td><code>ESC [ D</code> · <code>ESC [ C</code></td></tr>
-        <tr><td>↑ ↓</td><td class="dim">—</td><td><code>ESC [ A</code> · <code>ESC [ B</code></td></tr>
-        <tr><td>Home / End</td><td class="dim">—</td><td><code>ESC [ H</code> · <code>ESC [ F</code></td></tr>
-        <tr><td>esc</td><td class="dim">—</td><td><code>0x1B</code></td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <p style="margin-top:26px">Turning it on adds esc, ctrl and opt and a full set of cursor keys — and moves no letter to make room for them. ctrl and opt latch the way Shift does: tap, hold, or double-tap to lock, and they stack with it and with each other.</p>
-  <p>It works wherever the host app forwards inserted text to its terminal. The app ships an echo terminal — a real VT100 emulator with no shell behind it — so you can see exactly what each key sends before relying on it anywhere else.</p>
-
-  <div class="pair">
-    <figure>
-      <img src="images/ipad-terminal.png" alt="The echo terminal on iPad, showing a command interrupted by Ctrl-C printing a caret C, with esc, ctrl and opt keys on the keyboard below." width="1600" height="1112">
-      <figcaption>The echo terminal. Nothing runs here — it shows what your keystrokes send.</figcaption>
-    </figure>
-    <figure>
-      <img src="images/iphone-terminal.png" alt="Terminal mode in portrait on iPhone, with esc, ctrl, opt and a full set of cursor keys." width="660" height="1431">
-      <figcaption>Terminal mode in portrait. esc and the cursor keys ride in the top row.</figcaption>
-    </figure>
-  </div>
-</section>
-
-<section>
-  <div class="sec-head"><span class="num">04</span><h2>Privacy</h2></div>
-  <p>The keyboard does not request Full Access. Without it, iOS grants a keyboard extension no network capability at all — it cannot send your keystrokes anywhere because it cannot send anything anywhere. That is enforced by the operating system, not promised in a policy.</p>
-  <p class="dim">No data is collected. The keyboard extension has no analytics, no crash reporting and no third-party SDKs. The source is on GitHub under the MIT license, so none of the above has to be taken on faith.</p>
-</section>
-
-<section>
-  <div class="sec-head"><span class="num">05</span><h2>What it doesn't do</h2></div>
-  <p class="dim">No autocorrect, predictive text or swipe typing. No emoji key — the globe key switches back to your usual keyboard. No haptic feedback, because iOS only permits it with Full Access, which this keyboard does not request. US ASCII layout only.</p>
-</section>
+<p class="note">No autocorrect, no predictive text, no swipe typing, no emoji key. US ASCII only.</p>
 
 <footer>
-  <span><a href="https://github.com/NovaShang/CodingKeyboard">Source on GitHub</a></span>
-  <span><a href="privacy-policy.html">Privacy policy</a></span>
+  <span><a href="https://github.com/NovaShang/CodingKeyboard">GitHub</a></span>
+  <span><a href="privacy-policy.html">Privacy</a></span>
   <span><a href="https://github.com/NovaShang/CodingKeyboard/issues">Support</a></span>
   <span>© 2026 Shang Gao</span>
 </footer>
